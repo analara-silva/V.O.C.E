@@ -1,10 +1,19 @@
-# V.O.C.E - Vigilância Online de Comportamento Escolar
+# V.O.C.E - Visualização e Observação do Comportamento do Estudante
 
 ![Versão](https://img.shields.io/badge/version-2.0-blue)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 ![Licença](https://img.shields.io/badge/license-MIT-green)
 
-O **V.O.C.E** é uma plataforma completa para monitoramento de atividades de navegação em ambiente escolar. O sistema permite que professores acompanhem o tempo de uso de sites pelos alunos, classificando as atividades com inteligência artificial e fornecendo um dashboard para análise e gestão.
+---
+
+**👤 Autores:** Ana Lara, Gustavo, Sidney  
+**🎓 Orientadores:** Leonardo Gomes, Anderson Roberto  
+**🏫 Instituição:** SENAI-SP  
+**📘 Projeto:** Trabalho de Conclusão de Curso (TCC) – Curso Técnico em Desenvolvimento de Sistemas
+
+---
+
+O **V.O.C.E** é uma plataforma completa desenvolvida como parte do **Trabalho de Conclusão de Curso (TCC)** do SENAI-SP. Seu objetivo é possibilitar o **monitoramento das atividades de navegação de alunos em ambientes escolares**, permitindo que professores acompanhem o tempo de uso de sites, categorizem os acessos com **inteligência artificial** e visualizem tudo através de um **dashboard interativo** para análise e gestão pedagógica.
 
 ---
 
