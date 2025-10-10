@@ -50,6 +50,7 @@ MANIFEST
 *.key
 firebase-credentials.json
 serviceAccountKey.json
+firebase-service-account.json
 
 # ================================================================
 #                   LOGS

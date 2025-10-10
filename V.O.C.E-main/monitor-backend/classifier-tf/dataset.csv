@@ -1,0 +1,330 @@
+url,label
+# ===================== Rede Social =====================
+facebook.com,Rede Social
+instagram.com,Rede Social
+twitter.com,Rede Social
+tiktok.com,Rede Social
+whatsapp.com,Rede Social
+web.whatsapp.com,Rede Social
+reddit.com,Rede Social
+snapchat.com,Rede Social
+discord.com,Rede Social
+pinterest.com,Rede Social
+linkedin.com,Rede Social
+tumblr.com,Rede Social
+weheartit.com,Rede Social
+bere.al,Rede Social
+vk.com,Rede Social
+flickr.com,Rede Social
+clubhouse.com,Rede Social
+quora.com,Rede Social
+medium.com,Rede Social
+mastodon.social,Rede Social
+mix.com,Rede Social
+myspace.com,Rede Social
+parler.com,Rede Social
+truthsocial.com,Rede Social
+gab.com,Rede Social
+ok.ru,Rede Social
+telegram.org,Rede Social
+t.me,Rede Social
+threads.net,Rede Social
+nextdoor.com,Rede Social
+badoo.com,Rede Social
+tinder.com,Rede Social
+meetup.com,Rede Social
+tagged.com,Rede Social
+devianart.com,Rede Social
+ello.co,Rede Social
+aminoapps.com,Rede Social
+
+# ===================== IA (Inteligência Artificial) =====================
+chat.openai.com,IA
+anthropic.com,IA
+midjourney.com,IA
+perplexity.ai,IA
+claude.ai,IA
+gemini.google.com,IA
+poe.com,IA
+bard.google.com,IA
+tensorflow.org,IA
+pytorch.org,IA
+keras.io,IA
+deepmind.google,IA
+openai.com,IA
+firefly.adobe.com,IA
+huggingface.co,IA
+cohere.ai,IA
+stability.ai,IA
+replicate.com,IA
+runwayml.com,IA
+character.ai,IA
+notion.so,IA
+jasper.ai,IA
+copy.ai,IA
+writesonic.com,IA
+tabnine.com,IA
+mistral.ai,IA
+leonardo.ai,IA
+synthesia.io,IA
+elevenlabs.io,IA
+descript.com,IA
+gamma.app,IA
+tome.app,IA
+semantria.com,IA
+
+# ===================== Streaming & Jogos (Vídeo, TV, Música, Anime) =====================
+sbt.com.br,Streaming & Jogos
+recordtv.r7.com,Streaming & Jogos
+band.uol.com.br,Streaming & Jogos
+cultura.uol.com.br,Streaming & Jogos
+globoplay.globo.com,Streaming & Jogos
+hbo.com,Streaming & Jogos
+fox.com,Streaming & Jogos
+espn.com,Streaming & Jogos
+discoverychannel.com,Streaming & Jogos
+bbc.com,Streaming & Jogos
+nbc.com,Streaming & Jogos
+cbs.com,Streaming & Jogos
+abc.com,Streaming & Jogos
+sky.com,Streaming & Jogos
+hulu.com,Streaming & Jogos
+paramountplus.com,Streaming & Jogos
+disneyplus.com,Streaming & Jogos
+peacocktv.com,Streaming & Jogos
+pluto.tv,Streaming & Jogos
+starz.com,Streaming & Jogos
+showtime.com,Streaming & Jogos
+amc.com,Streaming & Jogos
+tntdrama.com,Streaming & Jogos
+appletv.com,Streaming & Jogos
+twitch.tv,Streaming & Jogos
+youtube.com,Streaming & Jogos
+netflix.com,Streaming & Jogos
+primevideo.com,Streaming & Jogos
+max.com,Streaming & Jogos
+discoveryplus.com,Streaming & Jogos
+kick.com,Streaming & Jogos
+skymais.com.br,Streaming & Jogos
+vimeo.com,Streaming & Jogos
+dailymotion.com,Streaming & Jogos
+vix.com,Streaming & Jogos
+tubitv.com,Streaming & Jogos
+filmon.com,Streaming & Jogos
+ustvgo.tv,Streaming & Jogos
+worldstar.hiphop,Streaming & Jogos
+rtve.es,Streaming & Jogos
+raiplay.it,Streaming & Jogos
+france.tv,Streaming & Jogos
+spotify.com,Streaming & Jogos
+deezer.com,Streaming & Jogos
+music.apple.com,Streaming & Jogos
+music.youtube.com,Streaming & Jogos
+letras.mus.br,Streaming & Jogos
+soundcloud.com,Streaming & Jogos
+last.fm,Streaming & Jogos
+tidal.com,Streaming & Jogos
+radio.com,Streaming & Jogos
+pandora.com,Streaming & Jogos
+napster.com,Streaming & Jogos
+shazam.com,Streaming & Jogos
+genius.com,Streaming & Jogos
+musixmatch.com,Streaming & Jogos
+audiomack.com,Streaming & Jogos
+boomplay.com,Streaming & Jogos
+gaana.com,Streaming & Jogos
+joox.com,Streaming & Jogos
+wynk.in,Streaming & Jogos
+kkbox.com,Streaming & Jogos
+line.me/music,Streaming & Jogos
+idagio.com,Streaming & Jogos
+songkick.com,Streaming & Jogos
+bandsintown.com,Streaming & Jogos
+mixcloud.com,Streaming & Jogos
+cifraclub.com.br,Streaming & Jogos
+bandcamp.com,Streaming & Jogos
+reverbnation.com,Streaming & Jogos
+8tracks.com,Streaming & Jogos
+jamendo.com,Streaming & Jogos
+mangaplus.shueisha.co.jp,Streaming & Jogos
+crunchyroll.com,Streaming & Jogos
+hidive.com,Streaming & Jogos
+funimation.com,Streaming & Jogos
+viz.com,Streaming & Jogos
+webtoons.com,Streaming & Jogos
+comixology.com,Streaming & Jogos
+anime-planet.com,Streaming & Jogos
+myanimelist.net,Streaming & Jogos
+anilist.co,Streaming & Jogos
+kitsu.io,Streaming & Jogos
+animenewsnetwork.com,Streaming & Jogos
+mangamo.com,Streaming & Jogos
+bookwalker.jp,Streaming & Jogos
+rightstufanime.com,Streaming & Jogos
+sevenseasentertainment.com,Streaming & Jogos
+yenpress.com,Streaming & Jogos
+kodansha.us,Streaming & Jogos
+shonenjump.com,Streaming & Jogos
+square-enix-games.com/en_US/manga,Streaming & Jogos
+animate-onlineshop.jp,Streaming & Jogos
+vertical-comics.com,Streaming & Jogos
+tapas.io,Streaming & Jogos
+lezhin.com,Streaming & Jogos
+toomics.com,Streaming & Jogos
+netcomics.com,Streaming & Jogos
+azuki.co,Streaming & Jogos
+global.manga-up.com,Streaming & Jogos
+animefire.plus,Streaming & Jogos
+animesonline.cc,Streaming & Jogos
+mangalivre.net,Streaming & Jogos
+lermanga.org,Streaming & Jogos
+mangatoon.mobi,Streaming & Jogos
+goyabu.com,Streaming & Jogos
+betteranime.net,Streaming & Jogos
+animesvision.com.br,Streaming & Jogos
+animesfox.net,Streaming & Jogos
+unionmangas.top,Streaming & Jogos
+superanimes.biz,Streaming & Jogos
+animesroll.com,Streaming & Jogos
+onepiece-ex.com.br,Streaming & Jogos
+meusanimes.com,Streaming & Jogos
+animesone.biz,Streaming & Jogos
+mundoanimes.com,Streaming & Jogos
+animestc.net,Streaming & Jogos
+yakusoku.net,Streaming & Jogos
+mangasproject.net,Streaming & Jogos
+animesgratis.org,Streaming & Jogos
+otakuanime.com,Streaming & Jogos
+animelatinohd.com,Streaming & Jogos
+animeblix.com,Streaming & Jogos
+9anime.to,Streaming & Jogos
+gogoanime.pe,Streaming & Jogos
+friv.com,Streaming & Jogos
+poki.com,Streaming & Jogos
+clickjogos.uol.com.br,Streaming & Jogos
+miniclip.com,Streaming & Jogos
+crazygames.com,Streaming & Jogos
+roblox.com,Streaming & Jogos
+minecraft.net,Streaming & Jogos
+
+# ===================== Governo =====================
+gov.br,Governo
+receita.fazenda.gov.br,Governo
+sp.gov.br,Governo
+detran.sp.gov.br,Governo
+senado.leg.br,Governo
+camara.leg.br,Governo
+planalto.gov.br,Governo
+stf.jus.br,Governo
+justica.gov.br,Governo
+al.gov.br,Governo
+mg.gov.br,Governo
+rj.gov.br,Governo
+pr.gov.br,Governo
+ba.gov.br,Governo
+rs.gov.br,Governo
+pe.gov.br,Governo
+sc.gov.br,Governo
+se.gov.br,Governo
+to.gov.br,Governo
+es.gov.br,Governo
+pa.gov.br,Governo
+rn.gov.br,Governo
+ro.gov.br,Governo
+ac.gov.br,Governo
+am.gov.br,Governo
+camara.sp.gov.br,Governo
+alesp.sp.gov.br,Governo
+tjsp.jus.br,Governo
+fazenda.sp.gov.br,Governo
+educacao.sp.gov.br,Governo
+saude.gov.br,Governo
+trabalho.gov.br,Governo
+economia.gov.br,Governo
+servicos.gov.br,Governo
+cidadania.gov.br,Governo
+defesa.gov.br,Governo
+
+# ===================== Produtividade & Ferramentas =====================
+google.com,Produtividade & Ferramentas
+github.com,Produtividade & Ferramentas
+portaleduca.sesisp.org.br,Produtividade & Ferramentas
+pess.sesisenaispedu.org.br,Produtividade & Ferramentas
+sp.senai.br,Produtividade & Ferramentas
+sesisp.org.br,Produtividade & Ferramentas
+sites.google.com,Produtividade & Ferramentas
+colab.research.google.com,Produtividade & Ferramentas
+trello.com,Produtividade & Ferramentas
+slack.com,Produtividade & Ferramentas
+zoom.us,Produtividade & Ferramentas
+microsoft.com,Produtividade & Ferramentas
+office.com,Produtividade & Ferramentas
+teams.microsoft.com,Produtividade & Ferramentas
+outlook.live.com,Produtividade & Ferramentas
+onedrive.live.com,Produtividade & Ferramentas
+dropbox.com,Produtividade & Ferramentas
+drive.google.com,Produtividade & Ferramentas
+calendar.google.com,Produtividade & Ferramentas
+evernote.com,Produtividade & Ferramentas
+asana.com,Produtividade & Ferramentas
+todoist.com,Produtividade & Ferramentas
+basecamp.com,Produtividade & Ferramentas
+monday.com,Produtividade & Ferramentas
+clickup.com,Produtividade & Ferramentas
+gmail.com,Produtividade & Ferramentas
+figma.com,Produtividade & Ferramentas
+canva.com,Produtividade & Ferramentas
+adobe.com,Produtividade & Ferramentas
+stackoverflow.com,Produtividade & Ferramentas
+w3schools.com,Produtividade & Ferramentas
+geeksforgeeks.org,Produtividade & Ferramentas
+freecodecamp.org,Produtividade & Ferramentas
+codepen.io,Produtividade & Ferramentas
+jsfiddle.net,Produtividade & Ferramentas
+replit.com,Produtividade & Ferramentas
+zapier.com,Produtividade & Ferramentas
+ifttt.com,Produtividade & Ferramentas
+miro.com,Produtividade & Ferramentas
+mural.co,Produtividade & Ferramentas
+overleaf.com,Produtividade & Ferramentas
+grammarly.com,Produtividade & Ferramentas
+calendly.com,Produtividade & Ferramentas
+wetransfer.com,Produtividade & Ferramentas
+smallpdf.com,Produtividade & Ferramentas
+prezi.com,Produtividade & Ferramentas
+localhost,Produtividade & Ferramentas
+g1.globo.com,Produtividade & Ferramentas
+uol.com.br,Produtividade & Ferramentas
+terra.com.br,Produtividade & Ferramentas
+estadao.com.br,Produtividade & Ferramentas
+folha.uol.com.br,Produtividade & Ferramentas
+cnn.com/news,Produtividade & Ferramentas
+nytimes.com,Produtividade & Ferramentas
+washingtonpost.com,Produtividade & Ferramentas
+theguardian.com,Produtividade & Ferramentas
+reuters.com,Produtividade & Ferramentas
+dw.com,Produtividade & Ferramentas
+elpais.com,Produtividade & Ferramentas
+lemonde.fr,Produtividade & Ferramentas
+aljazeera.com,Produtividade & Ferramentas
+r7.com,Produtividade & Ferramentas
+msn.com,Produtividade & Ferramentas
+news.yahoo.com,Produtividade & Ferramentas
+forbes.com,Produtividade & Ferramentas
+bloomberg.com,Produtividade & Ferramentas
+wsj.com,Produtividade & Ferramentas
+huffpost.com,Produtividade & Ferramentas
+vox.com,Produtividade & Ferramentas
+buzzfeednews.com,Produtividade & Ferramentas
+apnews.com,Produtividade & Ferramentas
+tecmundo.com.br,Produtividade & Ferramentas
+canaltech.com.br,Produtividade & Ferramentas
+olhardigital.com.br,Produtividade & Ferramentas
+theverge.com,Produtividade & Ferramentas
+wired.com,Produtividade & Ferramentas
+techcrunch.com,Produtividade & Ferramentas
+axios.com,Produtividade & Ferramentas
+politico.com,Produtividade & Ferramentas
+npr.org,Produtividade & Ferramentas
+time.com,Produtividade & Ferramentas
+

@@ -1,0 +1,12 @@
+# ================================================================
+#                   DEPENDÊNCIAS PYTHON - V.O.C.E
+# ================================================================
+
+# Machine Learning e Processamento de Dados
+scikit-learn>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0
+tensorflow>=2.13.0
+# Serialização de Modelos
+pickle5>=0.0.11; python_version < '3.8'
+matplotlib

@@ -1,8 +1,7 @@
-# V.O.C.E - Visualização e Observação do Comportamento do Estudante
+# V.O.C.E - Visualização e Observação do Comportamento Estudantil
 
-![Versão](https://img.shields.io/badge/version-2.0-blue)
+![Versão](https://img.shields.io/badge/version-4.0-blue)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Licença](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
@@ -19,9 +18,9 @@ O **V.O.C.E** é uma plataforma completa desenvolvida como parte do **Trabalho d
 
 ## Funcionalidades Principais
 
-- **Monitoramento Multi-navegador**: Extensões para Google Chrome e Firefox (em desenvolvimento).
+- **Monitoramento Multi-navegador**: Extensões para Google Chrome e Firefox.
 - **Identificação de Alunos**: Identificação flexível através do nome de usuário do sistema operacional, CPF ou ID do computador.
-- **Classificação com IA**: URLs são automaticamente categorizadas em grupos como "Educacional", "Rede Social", "Jogos", etc.
+- **Classificação com IA**: URLs são automaticamente categorizadas em grupos como "Educacional", "Rede Social", "Jogos", etc., utilizando técnicas de processamento de linguagem natural como GloVe.
 - **Dashboard do Professor**: Interface web para gestão de turmas, alunos e visualização de dados de navegação.
 - **Segurança e Privacidade**: Autenticação de professores, senhas criptografadas e isolamento de dados por turma.
 - **Armazenamento Escalável**: Utiliza o Google Firebase (Firestore) como banco de dados, garantindo performance e escalabilidade.
@@ -63,7 +62,7 @@ graph TD
 | ------------------- | -------------------------------------------------------- |
 | **Backend**         | Node.js, Express.js, EJS                                 |
 | **Banco de Dados**  | Google Firestore (Firebase)                              |
-| **Inteligência IA** | Python, Scikit-learn (Logistic Regression), TF-IDF       |
+| **Inteligência IA** | Python, Scikit-learn (Logistic Regression), TF-IDF, GloVe, TensorFlow |
 | **Extensão**        | JavaScript (Manifest V4)                                 |
 | **Autenticação**    | bcrypt.js, express-session                               |
 | **Comunicação**     | Native Messaging (Extensão <-> Host)                     |
@@ -85,7 +84,7 @@ Siga os passos abaixo para configurar o ambiente de desenvolvimento completo.
 
 1.  **Navegue até a pasta do backend**:
     ```bash
-    cd "V.O.C.E-chrome/monitor-backend"
+    cd V.O.C.E/V.O.C.E-main/monitor-backend
     ```
 
 2.  **Instale as dependências do Node.js**:
@@ -96,7 +95,6 @@ Siga os passos abaixo para configurar o ambiente de desenvolvimento completo.
 3.  **Instale as dependências do Python**:
     ```bash
     pip install -r requirements.txt
-    # (Crie um requirements.txt com scikit-learn, pandas)
     ```
 
 4.  **Configure as Variáveis de Ambiente**:
@@ -126,37 +124,28 @@ Siga os passos abaixo para configurar o ambiente de desenvolvimento completo.
 
 O Native Host é necessário para que a extensão possa identificar o usuário do computador.
 
-1.  **Edite o arquivo `host_manifest.json`** na pasta `tcc_native_host` e certifique-se de que o caminho (`path`) para `native_host.py` está correto.
-2.  **Execute o `install.bat` como administrador**. Isso irá registrar o host nativo no Windows.
+1.  **Para Chrome**: Edite o arquivo `host_manifest-chrome.json` localizado em `V.O.C.E/V.O.C.E/backup-native` e certifique-se de que o caminho (`path`) para `native_host.py` está correto. Em seguida, execute o `install.bat` como administrador para registrar o host nativo.
+2.  **Para Firefox**: Edite o arquivo `host_manifest-firefox.json` localizado em `V.O.C.E/V.O.C.E/backup-native` e certifique-se de que o caminho (`path`) para `native_host.py` está correto. Em seguida, execute o `install.bat` como administrador para registrar o host nativo.
 
 ### 4. Instalação da Extensão no Chrome
 
 1.  Abra o Google Chrome e navegue até `chrome://extensions`.
 2.  Ative o **"Modo do desenvolvedor"** no canto superior direito.
 3.  Clique em **"Carregar sem compactação"**.
-4.  Selecione a pasta `V.O.C.E-chrome/monitor-extensao`.
+4.  Selecione a pasta `V.O.C.E/V.O.C.E-main/monitor-extensao`.
 
 ---
 
 ## Estrutura do Projeto
 
 ```
-. V.O.C.E-main v.2.0/
-├── V.O.C.E-chrome/
-│   ├── monitor-backend/      # Servidor Node.js, IA e Dashboard
-│   └── monitor-extensao/     # Extensão para o Chrome
-├── V.O.C.E-firefox/          # (Em desenvolvimento)
-└── tcc_native_host/          # Script para comunicação com o SO
+. V.O.C.E-main/
+├── monitor-backend/      # Servidor Node.js, IA e Dashboard
+├── monitor-extensao/     # Extensão para o Chrome
+├── V.O.C.E-firefox/      # (Em desenvolvimento) - Extensão para Firefox
+└── tcc_native_host/      # Script para comunicação com o SO (native_host.py)
+└── backup-native/        # Contém os manifestos do host nativo para Chrome e Firefox (host_manifest-chrome.json, host_manifest-firefox.json)
 ```
 
 ---
-
-## Problemas Conhecidos e Melhorias
-
-- **Acurácia da IA**: O modelo de classificação possui uma acurácia baixa (~35%) devido a um dataset de treinamento pequeno e com ruído. É a principal área para melhoria.
-- **Extensão Firefox**: A implementação da extensão para Firefox ainda não foi concluída.
-
-## Licença
-
-Este projeto está licenciado sob a [Licença MIT](LICENSE).
 
