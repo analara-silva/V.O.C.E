@@ -63,7 +63,7 @@ graph TD
 | **Backend**         | Node.js, Express.js, EJS                                 |
 | **Banco de Dados**  | Google Firestore (Firebase)                              |
 | **Inteligência IA** | Python, Scikit-learn (Logistic Regression), TF-IDF, GloVe, TensorFlow |
-| **Extensão**        | JavaScript (Manifest V4)                                 |
+| **Extensão**        | JavaScript (Manifest V3)                                 |
 | **Autenticação**    | bcrypt.js, express-session                               |
 | **Comunicação**     | Native Messaging (Extensão <-> Host)                     |
 
@@ -141,8 +141,7 @@ O Native Host é necessário para que a extensão possa identificar o usuário d
 ```
 . V.O.C.E-main/
 ├── monitor-backend/      # Servidor Node.js, IA e Dashboard
-├── monitor-extensao/     # Extensão para o Chrome
-├── V.O.C.E-firefox/      # (Em desenvolvimento) - Extensão para Firefox
+├── monitor-extensao/     # Extensão para o Chrome e Firefox
 └── tcc_native_host/      # Script para comunicação com o SO (native_host.py)
 └── backup-native/        # Contém os manifestos do host nativo para Chrome e Firefox (host_manifest-chrome.json, host_manifest-firefox.json)
 ```
