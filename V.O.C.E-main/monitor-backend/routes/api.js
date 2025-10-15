@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const classifier = require('../classifier/python_classifier.js'); // Módulo de classificação
+const { db } = require('../firebase/firebase-config.js')
 
 // O db, auth e FieldValue são injetados via middleware no app.js: req.db, req.auth, req.FieldValue
 
@@ -11,55 +12,6 @@ const requireLogin = (req, res, next) => {
     }
     res.status(401).json({ error: 'Não autorizado. Faça login.' });
 };
-
-// ================================================================
-//                       ROTAS DE AUTENTICAÇÃO E PERFIL (POSTS)
-// ================================================================
-
-router.post('/createProfile', async (req, res, next) => {
-    console.log("Recebido em /api/createProfile:", req.body);
-    const { uid, fullName, username } = req.body;
-    if (!uid || !fullName || !username) {
-        return res.status(400).json({ error: 'Dados incompletos para criar perfil.' });
-    }
-    try {
-        await req.db.collection('professors').doc(uid).create({
-            full_name: fullName,
-            username: username
-        });
-        console.log(`Perfil criado com sucesso no Firestore para UID: ${uid}`);
-        res.status(201).json({ success: true, message: 'Perfil do professor criado com sucesso.' });
-    } catch (error) {
-        console.error('Erro detalhado ao criar perfil no Firestore:', error);
-        try {
-            await req.auth.deleteUser(uid);
-            console.log(`Usuário órfão ${uid} deletado do Auth.`);
-        } catch (cleanupError) {
-            console.error(`Falha CRÍTICA ao limpar usuário órfão ${uid}:`, cleanupError);
-        }
-        next(error); // Encaminha o erro
-    }
-});
-
-router.post('/sessionLogin', async (req, res, next) => {
-    const { idToken } = req.body;
-    try {
-        const decodedToken = await req.auth.verifyIdToken(idToken);
-        const uid = decodedToken.uid;
-        const professorDoc = await req.db.collection('professors').doc(uid).get();
-        if (!professorDoc.exists) {
-            console.error(`Login falhou: Perfil não encontrado para o UID: ${uid}.`);
-            // Lançar um erro para ser pego no catch
-            throw new Error('Professor não encontrado no Firestore.'); 
-        }
-        req.session.uid = uid;
-        req.session.professorName = professorDoc.data().full_name;
-        res.status(200).json({ success: true });
-    } catch (error) {
-        // Para falhas de login, tratamos localmente com 401 antes do next
-        res.status(401).json({ error: 'Falha na autenticação.' });
-    }
-});
 
 // ================================================================
 //                       ROTA PARA RECEBER LOGS DA EXTENSÃO
@@ -198,89 +150,297 @@ router.post('/classes/:classId/share', requireLogin, async (req, res, next) => {
 //                       APIs DE GESTÃO DE ALUNOS (STUDENTS)
 // ================================================================
 
-// Adicionar Aluno (Exemplo)
-router.post('/classes/:classId/students', requireLogin, async (req, res, next) => {
+// --- APIs DE GESTÃO (AGORA COM FIREBASE) ---
+router.post('/classes', requireLogin, async (req, res) => {
+    const { name } = req.body;
+    const { uid } = req.session;
+    if (!name) return res.status(400).json({ error: 'Nome da turma é obrigatório' });
+    try {
+        // [ALTERAÇÃO] Cria a turma com owner_id e member_ids
+        const docRef = await db.collection('classes').add({ 
+            name, 
+            owner_id: uid, // O criador é o dono
+            member_ids: [uid], // O criador é o primeiro membro
+            student_ids: [] 
+        });
+        res.json({ success: true, message: 'Turma criada com sucesso!', classId: docRef.id });
+    } catch (error) {
+        console.error('Erro ao criar turma:', error);
+        res.status(500).json({ error: 'Erro ao criar turma' });
+    }
+});
+
+router.put('/classes/:classId', requireLogin, async (req, res) => {
     const { classId } = req.params;
-    const { name, extension_id } = req.body;
-    const { uid } = req.session;
-
-    if (!name || !extension_id) return res.status(400).json({ error: 'Nome e ID da extensão são obrigatórios.' });
-    
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'O novo nome da turma é obrigatório.' });
     try {
-        const classDoc = await req.db.collection('classes').doc(classId).get();
-        if (!classDoc.exists || !classDoc.data().member_ids.includes(uid)) {
-            return res.status(403).json({ error: 'Você não é membro desta turma.' });
+        const classRef = db.collection('classes').doc(classId);
+        const doc = await classRef.get();
+        // [ALTERAÇÃO] Verifica se o usuário é membro da turma
+        if (!doc.exists || !doc.data().member_ids.includes(req.session.uid)) {
+            return res.status(403).json({ error: 'Permissão negada.' });
+        }
+        await classRef.update({ name });
+        res.json({ success: true, message: 'Nome da turma atualizado!' });
+    } catch (error) {
+        console.error('Erro ao atualizar turma:', error);
+        res.status(500).json({ error: 'Erro ao atualizar a turma.' });
+    }
+});
+
+router.delete('/classes/:classId', requireLogin, async (req, res) => {
+    const { classId } = req.params;
+    try {
+        const classRef = db.collection('classes').doc(classId);
+        const doc = await classRef.get();
+        // [ALTERAÇÃO] Apenas o dono pode apagar a turma
+        if (!doc.exists || doc.data().owner_id !== req.session.uid) {
+            return res.status(403).json({ error: 'Apenas o dono da turma pode removê-la.' });
+        }
+        await classRef.delete();
+        res.json({ success: true, message: 'Turma removida com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao remover turma:', error);
+        res.status(500).json({ error: 'Erro ao remover a turma.' });
+    }
+});
+
+// [NOVO] Rota para partilhar uma turma
+router.post('/classes/:classId/share', requireLogin, async (req, res) => {
+    const { classId } = req.params;
+    const { professorId } = req.body;
+    if (!professorId) return res.status(400).json({ error: 'ID do professor é obrigatório.' });
+
+    try {
+        const classRef = db.collection('classes').doc(classId);
+        const doc = await classRef.get();
+        if (!doc.exists || !doc.data().member_ids.includes(req.session.uid)) {
+            return res.status(403).json({ error: 'Permissão negada.' });
         }
 
-        const studentRef = await req.db.collection('students').add({
-            name,
-            extension_id,
-            class_id: classId,
-            owner_id: uid, // O professor que criou
-            created_at: req.FieldValue.serverTimestamp()
+        // Adiciona o novo professor ao array de membros de forma atómica
+        await classRef.update({
+            member_ids: FieldValue.arrayUnion(professorId)
         });
 
-        await req.db.collection('classes').doc(classId).update({
-            student_ids: req.FieldValue.arrayUnion(studentRef.id)
-        });
+        res.json({ success: true, message: 'Turma partilhada com sucesso!' });
+    } catch (error) {
+        console.error("Erro ao partilhar turma:", error);
+        res.status(500).json({ error: 'Erro interno ao partilhar turma.' });
+    }
+});
+
+// [NOVO] Rota para obter a lista de professores para partilhar
+router.get('/professors/list', requireLogin, async (req, res) => {
+    try {
+        const snapshot = await db.collection('professors').get();
+        const professors = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            // Filtra o professor que está logado
+            .filter(prof => prof.id !== req.session.uid);
+            
+        res.json(professors);
+    } catch (error) {
+        console.error("Erro ao listar professores:", error);
+        res.status(500).json({ error: 'Erro ao buscar professores.' });
+    }
+});
+
+// [NOVO] Rota para obter os membros atuais de uma turma
+router.get('/classes/:classId/members', requireLogin, async (req, res) => {
+    try {
+        const { classId } = req.params;
+        const classDoc = await db.collection('classes').doc(classId).get();
+
+        if (!classDoc.exists || !classDoc.data().member_ids.includes(req.session.uid)) {
+            return res.status(403).json({ error: 'Permissão negada.' });
+        }
+
+        const memberIds = classDoc.data().member_ids || [];
+        if (memberIds.length === 0) return res.json([]);
+
+        const memberRefs = memberIds.map(id => db.collection('professors').doc(id));
+        const memberDocs = await db.getAll(...memberRefs);
         
-        res.status(201).json({ success: true, message: 'Aluno adicionado com sucesso.', studentId: studentRef.id });
-
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Implementar router.put, router.delete e router.get para students aqui...
-
-
-// ================================================================
-//                       APIs DE DADOS E RELATÓRIOS
-// ================================================================
-
-// Listagem de professores (para compartilhamento de turmas)
-router.get('/professors/list', requireLogin, async (req, res, next) => {
-    try {
-        const professorsSnapshot = await req.db.collection('professors').get();
-        const professors = professorsSnapshot.docs.map(doc => ({
+        const members = memberDocs.map(doc => ({
             id: doc.id,
-            username: doc.data().username,
-            fullName: doc.data().full_name
+            full_name: doc.exists ? doc.data().full_name : 'Utilizador Desconhecido',
+            isOwner: doc.id === classDoc.data().owner_id
         }));
-        res.json({ success: true, professors });
+
+        res.json(members);
+
     } catch (error) {
-        next(error);
+        console.error("Erro ao buscar membros da turma:", error);
+        res.status(500).json({ error: "Erro ao buscar membros." });
     }
 });
 
-// Obtenção de Dados para o Dashboard (Filtros, Logs, etc.)
-router.get('/data', requireLogin, async (req, res, next) => {
-    const { classId, studentId, category } = req.query; // Exemplo de filtros
-    const { uid } = req.session;
-    let query = req.db.collection('logs');
 
+router.post('/students', requireLogin, async (req, res) => {
+    const { fullName, cpf, pc_id } = req.body;
+    if (!fullName) return res.status(400).json({ error: 'Nome do aluno é obrigatório' });
     try {
-        // Implementação da lógica de filtros
-        if (studentId) {
-            query = query.where('aluno_id', '==', studentId);
-        }
-
-        const logsSnapshot = await query.limit(50).get(); // Limitar para performance
-        const logs = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        res.json({ success: true, logs });
+        const studentData = { full_name: fullName, cpf: cpf || null, pc_id: pc_id || null };
+        const docRef = await db.collection('students').add(studentData);
+        res.json({ success: true, message: 'Aluno criado com sucesso!', student: { id: docRef.id, ...studentData } });
     } catch (error) {
-        next(error);
+        console.error('Erro ao criar aluno:', error);
+        res.status(500).json({ error: 'Erro ao criar aluno' });
     }
 });
 
-// NOVA ROTA: Obtenção de Logs de Alertas por Tipo
-router.get('/alerts/:alunoId/:type', requireLogin, async (req, res, next) => {
+router.put('/students/:studentId', requireLogin, async (req, res) => {
+    const { studentId } = req.params;
+    const { fullName, cpf, pc_id } = req.body;
+    if (!fullName) return res.status(400).json({ error: 'O nome do aluno é obrigatório.' });
+    try {
+        await db.collection('students').doc(studentId).update({ full_name: fullName, cpf: cpf || null, pc_id: pc_id || null });
+        res.json({ success: true, message: 'Dados do aluno atualizados!' });
+    } catch (error) {
+        console.error('Erro ao atualizar aluno:', error);
+        res.status(500).json({ error: 'Erro ao atualizar o aluno.' });
+    }
+});
+
+router.get('/students/all', requireLogin, async (req, res) => {
+    try {
+        const snapshot = await db.collection('students').orderBy('full_name').get();
+        const students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.json(students);
+    } catch (error) {
+        console.error('Erro ao buscar todos os alunos:', error);
+        res.status(500).json({ error: 'Erro ao buscar alunos' });
+    }
+});
+
+router.get('/classes/:classId/students', requireLogin, async (req, res) => {
+    try {
+        const { classId } = req.params;
+        const classDoc = await db.collection('classes').doc(classId).get();
+        if (!classDoc.exists || !classDoc.data().member_ids.includes(req.session.uid)) {
+            return res.status(403).json([]);
+        }
+        const studentIds = classDoc.data().student_ids || [];
+        if (studentIds.length === 0) return res.json([]);
+        
+        const studentRefs = studentIds.map(id => db.collection('students').doc(id));
+        const studentDocs = await db.getAll(...studentRefs);
+        const students = studentDocs.filter(doc => doc.exists).map(doc => ({ id: doc.id, ...doc.data() }));
+        res.json(students);
+    } catch (error) {
+        console.error('Erro ao buscar alunos da turma:', error);
+        res.status(500).json({ error: 'Erro ao buscar alunos da turma' });
+    }
+});
+
+router.post('/classes/:classId/add-student', requireLogin, async (req, res) => {
+    try {
+        const { classId } = req.params;
+        const { studentId } = req.body;
+        const classRef = db.collection('classes').doc(classId);
+        const classDoc = await classRef.get();
+        if (!classDoc.exists || !classDoc.data().member_ids.includes(req.session.uid)) {
+            return res.status(403).json({error: 'Permissão negada'});
+        }
+        await classRef.update({
+            student_ids: FieldValue.arrayUnion(studentId)
+        });
+        res.json({ success: true, message: 'Aluno adicionado à turma!' });
+    } catch (error) {
+        console.error('Erro ao adicionar aluno à turma:', error);
+        res.status(500).json({ error: 'Erro ao associar aluno.' });
+    }
+});
+
+router.delete('/classes/:classId/remove-student/:studentId', requireLogin, async (req, res) => {
+    try {
+        const { classId, studentId } = req.params;
+        const classRef = db.collection('classes').doc(classId);
+        const classDoc = await classRef.get();
+        if (!classDoc.exists || !classDoc.data().member_ids.includes(req.session.uid)) {
+            return res.status(403).json({error: 'Permissão negada'});
+        }
+        await classRef.update({
+            student_ids: FieldValue.arrayRemove(studentId)
+        });
+        res.json({ success: true, message: 'Aluno removido da turma!' });
+    } catch (error) {
+        console.error('Erro ao remover aluno da turma:', error);
+        res.status(500).json({ error: 'Erro ao remover aluno.' });
+    }
+});
+
+// --- APIs DE DADOS (LOGS, ALERTAS, ETC.) ---
+router.get('/data', requireLogin, async (req, res) => {
+    try {
+        const logsSnapshot = await db.collection('logs').orderBy('timestamp', 'desc').get();
+        const studentsSnapshot = await db.collection('students').get();
+
+        const studentsMap = new Map();
+        studentsSnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.cpf) studentsMap.set(data.cpf, data.full_name);
+            if (data.pc_id) studentsMap.set(data.pc_id, data.full_name);
+        });
+
+        const logs = logsSnapshot.docs.map(doc => {
+            const log = doc.data();
+            const timestamp = (log.timestamp && typeof log.timestamp.toDate === 'function')
+                ? log.timestamp.toDate()
+                : null;
+            return {
+                ...log,
+                student_name: studentsMap.get(log.aluno_id) || `<i>${log.aluno_id}</i>`,
+                timestamp: timestamp
+            };
+        }).filter(log => log.timestamp);
+
+        const summary = {};
+        logs.forEach(log => {
+            const studentId = log.aluno_id;
+            if (!summary[studentId]) {
+                summary[studentId] = {
+                    aluno_id: studentId,
+                    student_name: log.student_name,
+                    total_duration: 0,
+                    log_count: 0,
+                    last_activity: new Date(0),
+                    has_red_alert: 0,
+                    has_blue_alert: 0
+                };
+            }
+            summary[studentId].total_duration += log.duration;
+            summary[studentId].log_count += 1;
+            if (log.timestamp > summary[studentId].last_activity) {
+                summary[studentId].last_activity = log.timestamp;
+            }
+            if (['Rede Social', 'Streaming & Jogos'].includes(log.categoria)) {
+                summary[studentId].has_red_alert = 1;
+            }
+            if (log.categoria === 'IA') {
+                summary[studentId].has_blue_alert = 1;
+            }
+        });
+
+        res.json({
+            logs,
+            summary: Object.values(summary).sort((a, b) => b.last_activity - a.last_activity)
+        });
+
+    } catch (err) {
+        console.error('ERRO na rota /api/data:', err);
+        res.status(500).json({ error: 'Erro ao buscar dados.' });
+    }
+});
+
+
+router.get('/alerts/:alunoId/:type', requireLogin, async (req, res) => {
     try {
         const alunoId = decodeURIComponent(req.params.alunoId);
         const { type } = req.params;
         let categories;
-
         if (type === 'red') {
             categories = ['Rede Social', 'Streaming & Jogos'];
         } else if (type === 'blue') {
@@ -288,29 +448,22 @@ router.get('/alerts/:alunoId/:type', requireLogin, async (req, res, next) => {
         } else {
             return res.status(400).json({ error: 'Tipo de alerta inválido.' });
         }
-        
-        // Usa req.db e query otimizada do Firestore
-        const snapshot = await req.db.collection('logs')
+        const snapshot = await db.collection('logs')
             .where('aluno_id', '==', alunoId)
-            // Usa query 'in' para buscar múltiplas categorias
             .where('categoria', 'in', categories)
-            // Se o volume de logs for grande, este orderBy pode exigir um índice no Firestore
-            .orderBy('timestamp', 'desc') 
+            .orderBy('timestamp', 'desc')
             .get();
-
         const logs = snapshot.docs.map(doc => {
             const data = doc.data();
-            // Conversão de Firebase Timestamp para objeto Date (se necessário)
             const timestamp = (data.timestamp && typeof data.timestamp.toDate === 'function')
                 ? data.timestamp.toDate()
-                : data.timestamp;
-            return { ...data, timestamp: timestamp, id: doc.id };
+                : null;
+            return { ...data, timestamp: timestamp };
         });
-
         res.json(logs);
     } catch (err) {
-        // Encaminha o erro para o middleware centralizado no app.js
-        next(err); 
+        console.error('ERRO na rota /api/alerts/:alunoId:', err);
+        res.status(500).json({ error: 'Erro ao buscar logs de alerta.' });
     }
 });
 

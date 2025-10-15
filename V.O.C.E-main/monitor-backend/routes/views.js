@@ -23,6 +23,67 @@ router.get('/', (req, res) => {
 router.get('/login', (req, res) => res.render('login', { error: null, message: req.query.message || null, pageTitle: 'Login - V.O.C.E' }));
 router.get('/cadastro', (req, res) => res.render('cadastro', { error: null, pageTitle: 'Cadastro - V.O.C.E' }));
 
+router.post('/createProfile', async (req, res, next) => {
+    console.log("Recebido em /createProfile:", req.body);
+    // CORRIGIDO: Adicionando 'email' na desestruturação
+    const { uid, fullName, username, email } = req.body; 
+    
+    // CORRIGIDO: Adicionando 'email' na validação
+    if (!uid || !fullName || !username || !email) { 
+        return res.status(400).json({ error: 'Dados incompletos para criar perfil.' });
+    }
+    
+    try {
+        // CORRIGIDO: Usando .set() ao invés de .create() para evitar erro "ALREADY_EXISTS"
+        // Adicionando o email e um carimbo de data/hora
+        await req.db.collection('professors').doc(uid).set({
+            full_name: fullName,
+            username: username,
+            email: email, // Campo adicionado
+            createdAt: req.FieldValue.serverTimestamp() // Boa prática para rastreamento
+        });
+        
+        console.log(`Perfil criado com sucesso no Firestore para UID: ${uid}`);
+        res.status(201).json({ success: true, message: 'Perfil do professor criado com sucesso.' });
+    } catch (error) {
+        console.error('Erro detalhado ao criar perfil no Firestore:', error);
+        
+        // Tenta limpar o usuário criado no Auth se o Firestore falhar.
+        try {
+            await req.auth.deleteUser(uid);
+            console.log(`Usuário órfão ${uid} deletado do Auth.`);
+        } catch (cleanupError) {
+            console.error(`Falha CRÍTICA ao limpar usuário órfão ${uid}:`, cleanupError);
+            // Continua, pois o erro principal já foi tratado pelo 'next(error)'
+        }
+        
+        // Adicionando uma mensagem de erro mais clara antes de encaminhar
+        error.customMessage = 'Falha ao registrar perfil. O usuário no Auth foi deletado para que possa tentar novamente.';
+        next(error); // Encaminha o erro
+    }
+});
+
+router.post('/sessionLogin', async (req, res, next) => {
+    const { idToken } = req.body;
+    try {
+        const decodedToken = await req.auth.verifyIdToken(idToken);
+        const uid = decodedToken.uid;
+        const professorDoc = await req.db.collection('professors').doc(uid).get();
+        if (!professorDoc.exists) {
+            console.error(`Login falhou: Perfil não encontrado para o UID: ${uid}.`);
+            // Lançar um erro para ser pego no catch
+            throw new Error('Professor não encontrado no Firestore.'); 
+        }
+        req.session.uid = uid;
+        req.session.professorName = professorDoc.data().full_name;
+        res.status(200).json({ success: true });
+    } catch (error) {
+        // Para falhas de login, tratamos localmente com 401 antes do next
+        res.status(401).json({ error: 'Falha na autenticação.' });
+    }
+});
+
+
 router.get('/logout', (req, res) => {
     req.session.destroy(() => res.redirect('/'));
 });
@@ -99,6 +160,7 @@ router.post('/perfil', requireLogin, async (req, res, next) => {
         next(error);
     }
 });
+
 
 
 module.exports = router;

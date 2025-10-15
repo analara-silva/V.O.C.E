@@ -6,26 +6,12 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { getAuth } = require('firebase-admin/auth');
+const { db, auth } = require('./firebase/firebase-config.js')
+const { FieldValue } = require('firebase-admin/firestore');
 
 // Módulos de Rotas (ADICIONADO RECENTEMENTE)
 const apiRoutes = require('./routes/api.js');
 const viewRoutes = require('./routes/views.js'); 
-
-const serviceAccount = require('./firebase/firebase-service-account.json');
-
-// Inicialização do Firebase Admin
-initializeApp({
-    credential: cert(serviceAccount)
-});
-
-const db = getFirestore();
-const auth = getAuth();
-// Exportamos para que as rotas possam usar
-module.exports.db = db;
-module.exports.auth = auth;
 
 const app = express();
 const port = process.env.PORT || 8080;
