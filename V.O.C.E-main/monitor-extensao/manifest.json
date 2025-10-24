@@ -12,8 +12,11 @@
     "nativeMessaging"
   ],
 
+  "homepage_url": "html/politica-de-privacidade.html",
+
   "host_permissions": [
-    "http://localhost:3000/*"
+    "http://localhost:3000/*",
+    "http://localhost:8081/"
   ],
 
   "background": {

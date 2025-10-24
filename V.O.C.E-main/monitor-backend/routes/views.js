@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { requireLogin} = require('../middlewares/auth'); // Importa middleware
 
 // Middleware de Autenticação (Mantido aqui, mas pode ser movido para um 'middlewares/auth.js')
 const requireLogin = (req, res, next) => {
@@ -21,146 +22,133 @@ router.get('/', (req, res) => {
 });
 
 router.get('/login', (req, res) => res.render('login', { error: null, message: req.query.message || null, pageTitle: 'Login - V.O.C.E' }));
-router.get('/cadastro', (req, res) => res.render('cadastro', { error: null, pageTitle: 'Cadastro - V.O.C.E' }));
 
-router.post('/createProfile', async (req, res, next) => {
-    console.log("Recebido em /createProfile:", req.body);
-    // CORRIGIDO: Adicionando 'email' na desestruturação
-    const { uid, fullName, username, email } = req.body; 
-    
-    // CORRIGIDO: Adicionando 'email' na validação
-    if (!uid || !fullName || !username || !email) { 
-        return res.status(400).json({ error: 'Dados incompletos para criar perfil.' });
+router.get('/cadastro', (req, res) => res.render('cadastro', { pageTitle: 'Cadastro' }));
+
+// Rota de cadastro (resposta JSON)
+router.post('/cadastro', async (req, res) => {
+    const { fullName, username, email, password } = req.body;
+    if (!fullName || !username || !email || !password) {
+        return res.status(400).json({ success: false, message: 'Todos os campos são obrigatórios.' });
     }
-    
+    if (password.length < 6) {
+        return res.status(400).json({ success: false, message: 'A senha deve ter pelo menos 6 caracteres.' });
+    }
     try {
-        // CORRIGIDO: Usando .set() ao invés de .create() para evitar erro "ALREADY_EXISTS"
-        // Adicionando o email e um carimbo de data/hora
-        await req.db.collection('professors').doc(uid).set({
-            full_name: fullName,
-            username: username,
-            email: email, // Campo adicionado
-            createdAt: req.FieldValue.serverTimestamp() // Boa prática para rastreamento
-        });
-        
-        console.log(`Perfil criado com sucesso no Firestore para UID: ${uid}`);
-        res.status(201).json({ success: true, message: 'Perfil do professor criado com sucesso.' });
+        const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
+        await pool.query(
+            'INSERT INTO professors (full_name, username, email, password_hash) VALUES (?, ?, ?, ?)',
+            [fullName, username, email, hashedPassword]
+        );
+        res.status(201).json({ success: true, message: 'Cadastro realizado com sucesso!' });
     } catch (error) {
-        console.error('Erro detalhado ao criar perfil no Firestore:', error);
-        
-        // Tenta limpar o usuário criado no Auth se o Firestore falhar.
-        try {
-            await req.auth.deleteUser(uid);
-            console.log(`Usuário órfão ${uid} deletado do Auth.`);
-        } catch (cleanupError) {
-            console.error(`Falha CRÍTICA ao limpar usuário órfão ${uid}:`, cleanupError);
-            // Continua, pois o erro principal já foi tratado pelo 'next(error)'
+        console.error('Erro no cadastro:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ success: false, message: 'Email ou nome de usuário já está em uso.' });
         }
-        
-        // Adicionando uma mensagem de erro mais clara antes de encaminhar
-        error.customMessage = 'Falha ao registrar perfil. O usuário no Auth foi deletado para que possa tentar novamente.';
-        next(error); // Encaminha o erro
+        res.status(500).json({ success: false, message: 'Erro interno ao tentar realizar o cadastro.' });
     }
 });
 
-router.post('/sessionLogin', async (req, res, next) => {
-    const { idToken } = req.body;
+// Rota de login (resposta JSON)
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: 'Email e senha são obrigatórios.' });
+    }
     try {
-        const decodedToken = await req.auth.verifyIdToken(idToken);
-        const uid = decodedToken.uid;
-        const professorDoc = await req.db.collection('professors').doc(uid).get();
-        if (!professorDoc.exists) {
-            console.error(`Login falhou: Perfil não encontrado para o UID: ${uid}.`);
-            // Lançar um erro para ser pego no catch
-            throw new Error('Professor não encontrado no Firestore.'); 
+        const [rows] = await pool.query('SELECT * FROM professors WHERE email = ?', [email]);
+        if (rows.length === 0) {
+            return res.status(401).json({ success: false, message: 'Email ou senha inválidos.' });
         }
-        req.session.uid = uid;
-        req.session.professorName = professorDoc.data().full_name;
-        res.status(200).json({ success: true });
+        const professor = rows[0];
+        const match = await bcrypt.compare(password, professor.password_hash); // Compare hashed password
+        if (match) {
+            // Store professor info in session
+            req.session.professorId = professor.id;
+            req.session.professorName = professor.full_name;
+            req.session.save((err) => { // Explicitly save session before responding
+                if (err) {
+                    console.error('Erro ao salvar sessão:', err);
+                    return res.status(500).json({ success: false, message: 'Erro interno ao iniciar sessão.' });
+                }
+                res.status(200).json({ success: true }); // Send success to frontend
+            });
+        } else {
+            res.status(401).json({ success: false, message: 'Email ou senha inválidos.' });
+        }
     } catch (error) {
-        // Para falhas de login, tratamos localmente com 401 antes do next
-        res.status(401).json({ error: 'Falha na autenticação.' });
+        console.error('Erro no login:', error);
+        res.status(500).json({ success: false, message: 'Erro interno no servidor durante o login.' });
     }
 });
-
 
 router.get('/logout', (req, res) => {
-    req.session.destroy(() => res.redirect('/'));
+    req.session.destroy(err => {
+        if (err) {
+             console.error('Erro ao destruir sessão:', err);
+             return res.status(500).send('Não foi possível fazer logout.');
+        }
+        res.clearCookie('connect.sid'); // Optional: Clear the session cookie
+        res.redirect('/');
+    });
 });
 
 // ================================================================
-//                       ROTAS PROTEGIDAS
+//      ROTAS DE PÁGINAS PROTEGIDAS (RENDERIZAÇÃO EJS COM DADOS SQL)
 // ================================================================
-
-router.get('/dashboard', requireLogin, async (req, res, next) => {
+router.get('/dashboard', requireLogin, async (req, res) => {
     try {
-        const { uid, professorName } = req.session;
-        // Otimização: Buscando turmas onde o professor é membro
-        const classesSnapshot = await req.db.collection('classes').where('member_ids', 'array-contains', uid).orderBy('name').get();
-        const classes = classesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Melhoria: Usar metadados ou cache para categorias (em vez de ler todos os logs)
-        // Por enquanto, mantemos a lógica original para evitar quebrar o código:
-        const logsSnapshot = await req.db.collection('logs').get();
-        const categoriesSet = new Set();
-        logsSnapshot.forEach(doc => {
-            const categoria = doc.data().categoria;
-            if (categoria) categoriesSet.add(categoria);
-        });
-        
-        res.render('dashboard', { 
-            pageTitle: 'Dashboard', 
-            professorName, 
-            classes, 
-            categories: Array.from(categoriesSet).sort()
-        });
+        const [classes] = await pool.query('SELECT c.id, c.name FROM classes c JOIN class_members cm ON c.id = cm.class_id WHERE cm.professor_id = ? ORDER BY c.name', [req.session.professorId]);
+        // Fetch distinct categories directly from logs table for the filter dropdown
+        const [categoriesResult] = await pool.query('SELECT DISTINCT categoria FROM logs WHERE categoria IS NOT NULL ORDER BY categoria');
+        const categories = categoriesResult.map(c => c.categoria);
+        res.render('dashboard', { pageTitle: 'Dashboard', professorName: req.session.professorName, classes, categories });
     } catch (error) {
-        // Encaminha o erro para o middleware CENTRALIZADO
-        next(error);
+        console.error("Erro ao carregar dashboard:", error);
+        res.status(500).render('error', { pageTitle: 'Erro', message: 'Erro ao carregar o dashboard.' });
     }
 });
 
-// ROTA 1: GET /perfil (Carrega a página e os dados)
-router.get('/perfil', requireLogin, async (req, res, next) => {
+router.get('/gerenciamento', requireLogin, async (req, res) => {
     try {
-        const { uid } = req.session;
-        // Usa req.db para acessar o Firestore
-        const doc = await req.db.collection('professors').doc(uid).get();
-        
-        if(!doc.exists) return res.redirect('/logout');
-        
-        res.render('perfil', {
-            pageTitle: 'Meu Perfil',
-            user: doc.data(),
-            success: req.query.success
-        });
+        const [classes] = await pool.query('SELECT c.id, c.name FROM classes c JOIN class_members cm ON c.id = cm.class_id WHERE cm.professor_id = ? ORDER BY c.name', [req.session.professorId]);
+        res.render('gerenciamento', { pageTitle: 'Gestão', professorName: req.session.professorName, classes });
     } catch (error) {
-        // Encaminha o erro para o middleware centralizado
-        next(error);
+        console.error("Erro ao carregar gerenciamento:", error);
+         res.status(500).render('error', { pageTitle: 'Erro', message: 'Erro ao carregar a página de gerenciamento.' });
     }
 });
 
-// ROTA 2: POST /perfil (Atualiza os dados do perfil)
-router.post('/perfil', requireLogin, async (req, res, next) => {
+router.get('/perfil', requireLogin, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT id, full_name, username, email FROM professors WHERE id = ?', [req.session.professorId]);
+        if (rows.length === 0) return res.redirect('/logout'); // Should not happen if logged in
+        res.render('perfil', { pageTitle: 'Meu Perfil', user: rows[0], success: req.query.success, professorName: req.session.professorName });
+    } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+        res.status(500).render('error', { pageTitle: 'Erro', message: 'Erro ao carregar o perfil.' });
+    }
+});
+
+router.post('/perfil', requireLogin, async (req, res) => {
     const { fullName } = req.body;
-    const { uid } = req.session;
-    
-    // Rota de View: Validação falha redireciona
-    if (!fullName) return res.redirect('/perfil'); 
-    
+    if (!fullName || fullName.trim() === '') {
+        // Redirect back with an error message (optional)
+        return res.redirect('/perfil?error=Nome não pode ser vazio');
+    }
     try {
-        // Usa req.db para acessar o Firestore
-        await req.db.collection('professors').doc(uid).update({ full_name: fullName });
-        req.session.professorName = fullName;
-        
-        // Rota de View: Sucesso redireciona
-        res.redirect('/perfil?success=true');
+        await pool.query('UPDATE professors SET full_name = ? WHERE id = ?', [fullName.trim(), req.session.professorId]);
+        req.session.professorName = fullName.trim(); // Update name in session
+        req.session.save(err => { // Save session explicitly
+             if (err) { console.error('Erro ao salvar nome na sessão:', err); }
+             res.redirect('/perfil?success=true');
+        });
     } catch (error) {
-        // Encaminha o erro para o middleware centralizado
-        next(error);
+        console.error("Erro ao atualizar perfil:", error);
+        res.status(500).render('error', { pageTitle: 'Erro', message: 'Erro ao atualizar o perfil.' });
     }
 });
-
 
 
 module.exports = router;

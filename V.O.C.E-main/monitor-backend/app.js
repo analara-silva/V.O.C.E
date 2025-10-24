@@ -6,8 +6,8 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
-const { db, auth } = require('./firebase/firebase-config.js')
-const { FieldValue } = require('firebase-admin/firestore');
+
+const requireLogin = require('./middlewares/auth.js')
 
 // Módulos de Rotas (ADICIONADO RECENTEMENTE)
 const apiRoutes = require('./routes/api.js');
@@ -27,25 +27,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'segredo-muito-forte-aqui',
+    secret: 'chave-secreta-para-a-versao-oficial-do-tcc',
     resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000
-    }
+    saveUninitialized: true,
+    cookie: { secure: false, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 } // 1 dia
 }));
 
-// Middleware de Log e Variáveis Exportadas
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    // Anexamos db, auth e FieldValue ao req para facilitar o acesso nas rotas
-    req.db = db;
-    req.auth = auth;
-    req.FieldValue = FieldValue;
-    next();
-});
+app.use(['/api', '/dashboard'], requireLogin);
+
 
 // ================================================================
 //                       APLICAÇÃO DAS ROTAS
@@ -58,7 +47,7 @@ app.use('/', viewRoutes);  // Rotas de Visualização (Login, Dashboard)
 // ================================================================
 
 // Rota de fallback para erro 404
-app.use((req, res) => res.status(404).send('Página não encontrada'));
+app.use((req, res) => res.status(404).render('error404'));
 
 // Middleware CENTRALIZADO para tratamento de erros 500
 app.use((err, req, res, next) => {
@@ -72,6 +61,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
-    console.log(`Servidor rodando na porta ${port}`);
-    console.log(`Acesse o dashboard em http://localhost:${port}/dashboard (após o login)`);
+    console.log(`🚀 Servidor oficial V.O.C.E rodando em http://localhost:${port}`);
 });

@@ -1,18 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= pageTitle %></title>
-    <!-- Script CDN do TailwindCSS - Essencial para o funcionamento dos estilos -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Estilos globais mínimos que não são do Tailwind */
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
-    </style>
-</head>
+    <head>
+        <%- include('partials/header') %>
+        </head>
 <body class="bg-white flex flex-col min-h-screen">
 
     <!-- Cabeçalho Padrão SENAI -->

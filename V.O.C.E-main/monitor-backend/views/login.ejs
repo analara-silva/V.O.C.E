@@ -1,18 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= pageTitle %></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .form-input { width: 100%; padding: 0.5rem 1rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; transition: box-shadow 0.2s; }
-        .form-input:focus { outline: none; box-shadow: 0 0 0 2px #FCA5A5; border-color: #EF4444; }
-        .btn-submit { width: 100%; padding: 0.75rem 1rem; border-radius: 0.375rem; font-weight: 600; color: white; background-color: #B91C1C; transition: background-color 0.2s; }
-        .btn-submit:hover { background-color: #991B1B; }
-    </style>
-</head>
+    <head>
+        <%- include('partials/header') %>
+        </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
     <header class="bg-white shadow-md border-b-2 border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
@@ -54,7 +44,6 @@
                         Não tem uma conta? 
                         <a href="/cadastro" class="font-medium text-red-700 hover:text-red-800">Cadastre-se!</a>
                     </p>
-                    <a href="#" id="forgotPasswordLink" class="font-medium text-red-700 hover:text-red-800">Esqueceu a senha?</a>
                 </div>
             </form>
         </div>
@@ -85,88 +74,81 @@
         </div>
     </footer>
     
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyDznqrm2kJfKQXxWpgHWwk-msXH89OEgTo",
-            authDomain: "banco-vc.firebaseapp.com",
-            projectId: "banco-vc",
-            storageBucket: "banco-vc.appspot.com",
-            messagingSenderId: "858410245985",
-            appId: "1:858410245985:web:56fae7da4c145c30a32f20",
-            measurementId: "G-4E7K9TY3B7"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        const loginForm = document.getElementById('loginForm');
-        const errorMessageDiv = document.getElementById('error-message');
-        const successMessageDiv = document.getElementById('success-message');
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorMessageDiv.classList.add('hidden');
-            if (successMessageDiv) successMessageDiv.classList.add('hidden');
-            
-            const email = loginForm.email.value;
-            const password = loginForm.password.value;
-
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const idToken = await userCredential.user.getIdToken();
-                
-                const response = await fetch('/sessionLogin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken })
-                });
-
-                if (!response.ok) {
-                   const errorData = await response.json();
-                   throw new Error(errorData.error || 'Falha ao criar sessão no servidor.');
-                }
-                
-                window.location.href = '/dashboard';
-
-            } catch (error) {
-                let friendlyMessage = 'Email ou senha inválidos.';
-                if (error.message.includes('Falha ao criar sessão')) {
-                    friendlyMessage = 'Falha ao criar sessão no servidor. Contacte o suporte.';
-                }
-                console.error("Erro no login:", error);
-                errorMessageDiv.querySelector('p').textContent = friendlyMessage;
-                errorMessageDiv.classList.remove('hidden');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const errorMessageDiv = document.getElementById('error-message');
+            const successMessageDiv = document.getElementById('success-message'); // Para msg de cadastro
+    
+            // Exibe a mensagem de sucesso do cadastro, se houver
+            const urlParams = new URLSearchParams(window.location.search);
+            const registerMessage = urlParams.get('message');
+            if (registerMessage && successMessageDiv) {
+                successMessageDiv.querySelector('p').textContent = registerMessage;
+                successMessageDiv.classList.remove('hidden');
+                // Opcional: Remover o parâmetro da URL após exibir
+                window.history.replaceState({}, document.title, "/login");
+            } else if (successMessageDiv) {
+                successMessageDiv.classList.add('hidden');
             }
-        });
-
-        // Lógica do Modal de Redefinição de Senha
-        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-        const resetModal = document.getElementById('resetPasswordModal');
-        const cancelResetBtn = document.getElementById('cancelReset');
-        const resetForm = document.getElementById('resetPasswordForm');
-
-        forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            resetModal.classList.remove('hidden');
-        });
-
-        cancelResetBtn.addEventListener('click', () => {
-            resetModal.classList.add('hidden');
-        });
-
-        resetForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('resetEmail').value;
-            try {
-                await sendPasswordResetEmail(auth, email);
-                resetModal.classList.add('hidden');
-                alert('Email de redefinição enviado! Verifique a sua caixa de entrada.');
-            } catch (error) {
-                console.error("Erro ao enviar email de redefinição:", error);
-                alert('Falha ao enviar email. Verifique se o email está correto.');
+    
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Impede o envio padrão
+                errorMessageDiv.classList.add('hidden'); // Esconde erros antigos
+                if (successMessageDiv) successMessageDiv.classList.add('hidden'); // Esconde sucesso antigo
+    
+                const formData = new FormData(loginForm);
+                const data = Object.fromEntries(formData.entries());
+    
+                const submitButton = loginForm.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Entrando...';
+    
+                try {
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+    
+                    const result = await response.json();
+    
+                    if (!response.ok) {
+                        throw new Error(result.message || `Erro ${response.status}`);
+                    }
+    
+                    // Sucesso no login! Redireciona para o dashboard
+                    window.location.href = '/dashboard';
+    
+                } catch (error) {
+                    console.error("Erro no login:", error);
+                    // Mostra o erro no SweetAlert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Falha no Login',
+                        text: error.message || 'Não foi possível fazer login.'
+                    });
+                     // Ou use a div de erro:
+                    // errorMessageDiv.querySelector('p').textContent = error.message || 'Não foi possível fazer login.';
+                    // errorMessageDiv.classList.remove('hidden');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
+                }
+            });
+    
+            // --- Lógica do modal "Esqueceu a senha?" ---
+            // (Mantém a lógica anterior com fetch para /forgot-password e SweetAlert)
+            const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+            const resetModal = document.getElementById('resetPasswordModal');
+            const cancelResetBtn = document.getElementById('cancelReset');
+            const resetForm = document.getElementById('resetPasswordForm');
+    
+            if (forgotPasswordLink && resetModal && cancelResetBtn && resetForm) {
+                forgotPasswordLink.addEventListener('click', (e) => { e.preventDefault(); resetModal.classList.remove('hidden'); });
+                cancelResetBtn.addEventListener('click', () => { resetModal.classList.add('hidden'); });
+                resetForm.addEventListener('submit', async (e) => { /* ... Cole aqui a lógica do fetch para /forgot-password da resposta anterior, que já usa Swal.fire ... */ });
             }
         });
     </script>

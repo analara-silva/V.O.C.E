@@ -1,17 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= pageTitle %></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .form-input { width: 100%; padding: 0.5rem 1rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; transition: box-shadow 0.2s; }
-        .form-input:focus { outline: none; box-shadow: 0 0 0 2px #FCA5A5; border-color: #EF4444; }
-        .btn-submit { width: 100%; padding: 0.75rem 1rem; border-radius: 0.375rem; font-weight: 600; color: white; background-color: #B91C1C; transition: background-color 0.2s; }
-        .btn-submit:hover { background-color: #991B1B; }
-    </style>
-</head>
+    <head>
+        <%- include('partials/header') %>
+        </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
     <header class="bg-white shadow-md border-b-2 border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
@@ -27,7 +18,7 @@
             <form class="mt-8 space-y-6" id="cadastroForm">
                 <div class="space-y-4">
                     <div>
-                        <label for="fullName" class="block text-sm font-medium text-gray-700">O seu Nome Completo</label>
+                        <label for="fullName" class="block text-sm font-medium text-gray-700">Nome Completo</label>
                         <input id="fullName" name="fullName" type="text" required class="mt-1 form-input">
                     </div>
                     <div>
@@ -68,77 +59,65 @@
         </div>
     </footer>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyDznqrm2kJfKQXxWpgHWwk-msXH89OEgTo",
-            authDomain: "banco-vc.firebaseapp.com",
-            projectId: "banco-vc",
-            storageBucket: "banco-vc.appspot.com",
-            messagingSenderId: "858410245985",
-            appId: "1:858410245985:web:56fae7da4c145c30a32f20",
-            measurementId: "G-4E7K9TY3B7"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        const form = document.getElementById('cadastroForm');
-        const errorMessageDiv = document.getElementById('error-message');
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorMessageDiv.classList.add('hidden');
-
-            const fullName = form.fullName.value;
-            const username = form.username.value;
-            const email = form.email.value;
-            const password = form.password.value;
-
-            try {
-                // Passo 1: Cria o usuário apenas no Firebase Authentication.
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const uid = userCredential.user.uid;
-
-                // Passo 2: Se a criação no Auth for bem-sucedida, envia os dados do perfil para o nosso backend.
-                const response = await fetch('/createProfile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        uid: uid,
-                        fullName: fullName,
-                        username: username
-                    })
-                });
-
-                if (!response.ok) {
-                    // Se o backend falhar ao criar o perfil, o erro será capturado aqui.
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Falha ao criar o perfil no servidor.');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('cadastroForm');
+            const errorMessageDiv = document.getElementById('error-message');
+    
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Impede o envio padrão do formulário
+                errorMessageDiv.classList.add('hidden'); // Esconde erros antigos
+    
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+    
+                // Pega o botão de submit para dar feedback visual
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Registrando...';
+    
+                try {
+                    const response = await fetch('/cadastro', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+    
+                    const result = await response.json(); // Sempre esperamos JSON agora
+    
+                    if (!response.ok) {
+                        // Se a resposta não for OK (4xx, 5xx), lança um erro com a mensagem do backend
+                        throw new Error(result.message || `Erro ${response.status}`);
+                    }
+    
+                    // Sucesso! Mostra SweetAlert e redireciona para o login
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso!',
+                        text: result.message,
+                        timer: 2000, // Fecha automaticamente após 2 segundos
+                        showConfirmButton: false
+                    });
+                    window.location.href = '/login'; // Redireciona para a página de login
+    
+                } catch (error) {
+                    console.error("Erro no cadastro:", error);
+                    // Mostra o erro no SweetAlert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: error.message || 'Não foi possível completar o cadastro.'
+                    });
+                    // Ou, se preferir, use a div de erro:
+                    // errorMessageDiv.querySelector('p').textContent = error.message || 'Não foi possível completar o cadastro.';
+                    // errorMessageDiv.classList.remove('hidden');
+                } finally {
+                    // Restaura o botão
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
                 }
-                
-                // Passo 3: Se tudo correu bem, redireciona para o login.
-                window.location.href = '/login?message=Cadastro realizado com sucesso! Pode fazer o login.';
-
-            } catch (error) {
-                console.error("Erro no cadastro:", error);
-                let friendlyMessage = "Não foi possível criar o usuário. Verifique os dados.";
-                
-                // Trata erros específicos do Firebase Authentication.
-                if (error.code === 'auth/email-already-in-use') {
-                    friendlyMessage = 'Este e-mail já está em uso por outra conta.';
-                } else if (error.code === 'auth/weak-password') {
-                    friendlyMessage = 'A senha é muito fraca. Utilize pelo menos 6 caracteres.';
-                } else if (error.message) {
-                    // Trata erros vindos do nosso backend (lançados com "throw new Error(...)").
-                    friendlyMessage = error.message;
-                }
-                
-                errorMessageDiv.querySelector('p').textContent = friendlyMessage;
-                errorMessageDiv.classList.remove('hidden');
-            }
+            });
         });
     </script>
 </body>

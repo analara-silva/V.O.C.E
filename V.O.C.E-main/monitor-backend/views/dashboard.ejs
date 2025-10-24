@@ -8,18 +8,6 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        #notification-container {
-            position: fixed; top: 1rem; right: 1rem; z-index: 1050; width: 350px;
-        }
-        .notification {
-            padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); opacity: 0;
-            transform: translateX(100%); animation: slideIn 0.5s forwards;
-        }
-        .notification.success { background-color: #10B981; }
-        .notification.error { background-color: #EF4444; }
-        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
-
         .pagination-btn {
             padding: 0.25rem 0.75rem;
             border: 1px solid #D1D5DB;
@@ -36,12 +24,13 @@
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
     
-    <div id="notification-container"></div>
-
     <header class="bg-white shadow-md border-b-2 border-gray-100 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
             <a href="/"><img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="Logo SENAI" class="h-10"></a>
             <div class="flex items-center space-x-6">
+                <a href="/gerenciamento" class="text-gray-600 hover:text-red-700 font-semibold transition-colors duration-200 text-sm uppercase tracking-wider">
+                    Gerenciamento
+                </a>
                 <a href="/perfil" class="text-gray-600 hover:text-red-700 font-semibold transition-colors duration-200 text-sm uppercase tracking-wider">
                     Meu Perfil
                 </a>
@@ -53,26 +42,37 @@
             </div>
         </div>
     </header>
+    
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
         <div class="space-y-8">
-            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
-                <h2 class="text-xl font-bold text-gray-900 mb-6">Gestão de Turmas</h2>
-                <div class="mb-4">
-                    <button id="toggle-create-class-form" class="w-full text-left p-3 bg-gray-200 hover:bg-gray-300 rounded-md font-semibold text-gray-700 transition-colors">
-                        + Adicionar Nova Turma
-                    </button>
-                </div>
-                <div id="create-class-form-container" class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 hidden">
-                    <div class="flex gap-3">
-                        <input type="text" id="newClassName" placeholder="Nome da nova turma" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none flex-1">
-                        <button id="createClassBtn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500 whitespace-nowrap">Criar Turma</button>
+
+            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700 mb-8">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Exportar Relatório Diário</h2>
+                <p class="text-gray-700 mb-4">
+                    Selecione a data para gerar um relatório em PDF com os dados de atividade dos alunos. Os relatórios ficam disponíveis por até 3 dias.
+                </p>
+                <div class="flex items-end gap-4">
+                    <div>
+                        <label for="reportDate" class="block text-sm font-medium text-gray-700">Data do Relatório</label>
+                        <input type="date" id="reportDate" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
+                    </div>
+                    <div>
+                        <button id="downloadPdfBtn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm bg-red-700 text-white hover:bg-red-800">
+                            Baixar Relatório
+                        </button>
                     </div>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-4 items-end">
-                    <div class="flex-1 w-full">
-                        <label for="classSelect" class="block text-sm font-medium text-gray-700 mb-2">Filtro de Visualização:</label>
-                        <select id="classSelect" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
+                <div id="reportError" class="text-red-600 text-sm mt-2"></div>
+            </section>
+
+            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Filtros de Dados e Visualização</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label for="classSelect" class="block text-sm font-medium text-gray-700">Filtrar por Turma</label>
+                        <select id="classSelect" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
                             <option value="null">Visão Geral (Todas as Turmas)</option>
                             <% if (classes.length > 0) { %>
                                 <% classes.forEach(cls => { %>
@@ -81,45 +81,6 @@
                             <% } %>
                         </select>
                     </div>
-                    <div class="flex gap-2">
-                        <button id="shareClassBtn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500" disabled>Partilhar Turma</button>
-                        <button id="editClassBtn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500" disabled>Editar Turma</button>
-                        <button id="deleteClassBtn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500" disabled>Remover Turma</button>
-                    </div>
-                </div>
-            </section>
-            
-            <section id="student-management-panel" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Meus Alunos</h3>
-                    <div class="mb-4">
-                        <input type="text" id="student-search-input" placeholder="Pesquisar em meus alunos..." class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
-                    </div>
-                    <div class="mb-4">
-                        <button id="toggle-add-student-form" class="w-full text-left p-3 bg-red-100 hover:bg-red-200 rounded-md font-semibold text-red-800 transition-colors">
-                            + Adicionar Novo Aluno
-                        </button>
-                    </div>
-                    <div id="add-student-form-container" class="mb-4 p-4 bg-red-50 rounded-lg border border-red-200 hidden">
-                        <form id="addStudentForm" class="space-y-2">
-                           <input type="text" name="fullName" placeholder="Nome completo do aluno" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none" required>
-                           <input type="text" name="cpf" placeholder="CPF (opcional)" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
-                           <input type="text" name="pc_id" placeholder="ID do PC (opcional)" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
-                           <button type="submit" class="w-full inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500">Adicionar</button>
-                        </form>
-                    </div>
-                    <div id="all-students-list" class="space-y-2 max-h-96 overflow-y-auto"></div>
-                </div>
-                <div id="class-students-panel" class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700 hidden">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Alunos na Turma: <span id="class-name-in-list" class="text-red-700"></span></h3>
-                    <p class="text-sm text-gray-500 mb-4">Arraste ou clique no '+' de um aluno para adicioná-lo aqui.</p>
-                    <div id="students-in-class-list" class="space-y-2 min-h-[100px] bg-gray-50 p-2 rounded border-dashed border-2 border-gray-300"></div>
-                </div>
-            </section>
-
-            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
-                <h2 class="text-xl font-bold text-gray-900 mb-4">Filtros de Dados</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div>
                         <label for="search-input" class="block text-sm font-medium text-gray-700">Pesquisar por Aluno/ID/URL</label>
                         <input type="text" id="search-input" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
@@ -134,12 +95,12 @@
                         </select>
                     </div>
                     <div class="flex items-center gap-4">
-                         <div class="flex items-center h-full mt-1">
+                        <div class="flex items-center h-full mt-1">
                             <input id="show-alerts-checkbox" type="checkbox" class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
                             <label for="show-alerts-checkbox" class="ml-2 block text-sm text-gray-900">Apenas Alertas</label>
                         </div>
-                        <button id="apply-filters-btn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm bg-red-700 text-white hover:bg-red-800">Aplicar Filtros</button>
-                        <button id="clear-filters-btn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm bg-gray-600 text-white hover:bg-gray-700">Limpar</button>
+                        <button id="apply-filters-btn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm bg-red-700 text-white hover:bg-red-800">Aplicar</button>
+                        <button id="clear-filters-btn" class="inline-block px-4 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm bg-gray-600 text-white hover:bg-gray-700">Limpar</button>
                     </div>
                 </div>
             </section>
@@ -162,6 +123,8 @@
                             <button class="chart-btn active bg-red-700 text-white px-4 py-1 rounded-md text-sm" data-type="bar">Barras</button>
                             <button class="chart-btn bg-gray-200 text-gray-700 px-4 py-1 rounded-md text-sm" data-type="pie">Pizza</button>
                             <button class="chart-btn bg-gray-200 text-gray-700 px-4 py-1 rounded-md text-sm" data-type="doughnut">Rosca</button>
+                            <button class="chart-btn bg-gray-200 text-gray-700 px-4 py-1 rounded-md text-sm" data-type="line">Linha</button>
+                            <button class="chart-btn bg-gray-200 text-gray-700 px-4 py-1 rounded-md text-sm" data-type="polarArea">Área Polar</button>
                         </div>
                     </div>
                     <div class="relative h-80 w-full">
@@ -185,88 +148,30 @@
 
     <footer class="bg-red-800 text-white mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
-            <p class="text-sm">&copy; <%= new Date().getFullYear() %> SENAI - V.O.C.E. Todos os direitos reservados.</p>
+            <p class="text-sm">© <%= new Date().getFullYear() %> SENAI -  Todos os direitos reservados.</p>
         </div>
     </footer>
     
-    <!-- Modais -->
-    <div id="editClassModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Editar Nome da Turma</h3>
-            <div class="mt-4">
-                <label for="editClassNameInput" class="block text-sm font-medium text-gray-700 mb-2">Novo nome da turma:</label>
-                <input type="text" id="editClassNameInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button onclick="closeModals()" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500">Cancelar</button>
-                <button id="saveClassChangesBtn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500">Salvar</button>
-            </div>
-        </div>
-    </div>
-    <div id="editStudentModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Editar Dados do Aluno</h3>
-            <div class="space-y-4 mt-4">
-                <div>
-                    <label for="editStudentNameInput" class="block text-sm font-medium text-gray-700 mb-1">Nome Completo:</label>
-                    <input type="text" id="editStudentNameInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
-                </div>
-                <div>
-                    <label for="editStudentCpfInput" class="block text-sm font-medium text-gray-700 mb-1">CPF (Opcional):</label>
-                    <input type="text" id="editStudentCpfInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
-                </div>
-                <div>
-                    <label for="editStudentPcIdInput" class="block text-sm font-medium text-gray-700 mb-1">ID do PC (Opcional):</label>
-                    <input type="text" id="editStudentPcIdInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none">
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button onclick="closeStudentModal()" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500">Cancelar</button>
-                <button id="saveStudentChangesBtn" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500">Salvar Alterações</button>
-            </div>
-        </div>
-    </div>
-
-        <div id="alertLogsModal" class="modal-overlay hidden">
-            <div class="modal-content max-w-3xl">
-                <h3 id="alertLogsTitle" class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Logs de Alerta</h3>
-                <div id="alertLogsContainer" class="max-h-[60vh] overflow-y-auto">
-                    <!-- Conteúdo dos logs será inserido aqui pelo script.js -->
-                </div>
-                <div class="mt-6 flex justify-end">
-                    <button onclick="closeAlertLogsModal()" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500">Fechar</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- [NOVO] Modal de Partilha de Turma -->
-        <div id="shareClassModal" class="modal-overlay hidden">
-            <div class="modal-content max-w-2xl">
-                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Partilhar Turma <span id="shareClassName" class="text-red-700"></span></h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                    <div>
-                        <h4 class="font-semibold mb-2">Adicionar Professor</h4>
-                        <div class="flex gap-2">
-                            <select id="professorsToShareList" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-red-600 outline-none flex-1">
-                                <option value="">Selecione um professor...</option>
-                            </select>
-                            <button id="addProfessorToClassBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Adicionar</button>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold mb-2">Membros Atuais</h4>
-                        <ul id="currentClassMembers" class="space-y-2 max-h-48 overflow-y-auto">
-                            <!-- Membros serão inseridos aqui -->
-                        </ul>
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end">
-                    <button onclick="closeShareModal()" class="inline-block px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-sm bg-gray-600 text-white hover:bg-gray-700">Fechar</button>
-                </div>
-            </div>
-        </div>
+    <%- include('partials/modals') %>
     
-    <script src="/js/script.js"></script>
+    
+    <div id="categoryEditModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Alterar Categoria para:</h3>
+                <button id="closeCategoryModalBtn" class="text-gray-400 hover:text-gray-600 modal-close-btn">&times;</button>
+            </div>
+            <p id="modalUrlDisplay" class="text-sm font-mono text-gray-700 mb-4 break-all"></p>
+            
+            <div id="modalCategoryList" class="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2">
+            </div>
+            
+            <div class="flex justify-end gap-4 pt-4 border-t">
+                <button id="cancelCategoryChangeBtn" type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 modal-close-btn">Cancelar</button>
+                <button id="confirmCategoryChangeBtn" type="button" class="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    <script src="/js/dashboard.js"></script>
 </body>
 </html>
-

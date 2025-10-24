@@ -1,6 +1,6 @@
 # V.O.C.E - Visualização e Observação do Comportamento Estudantil
 
-![Versão](https://img.shields.io/badge/version-4.0-blue)
+![Versão](https://img.shields.io/badge/version-4.1-blue)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 
 ---
@@ -32,7 +32,6 @@ O **V.O.C.E** é uma plataforma completa desenvolvida como parte do **Trabalho d
 
 Os seguintes arquivos **não estão no repositório** por conterem informações sensíveis:
 
-- `monitor-backend/firebase/firebase-credentials.json`
 - `monitor-backend/classifier-tf/glove6b100d.txt`
 
 Você pode obter esses arquivos [neste link do Google Drive](https://drive.google.com/drive/folders/1IOB0dG8gS1JKYn_pnEFNd0lESFhY2myu?usp=sharing).
@@ -46,8 +45,8 @@ Você pode obter esses arquivos [neste link do Google Drive](https://drive.googl
 . V.O.C.E-main/
 ├── monitor-backend/      # Servidor Node.js, IA e Dashboard
 ├── monitor-extensao/     # Extensão para o Chrome e Firefox
-└── tcc_native_host/      # Script para comunicação com o SO (native_host.py)
-└── backup-native/        # Contém os manifestos do host nativo para Chrome e Firefox (host_manifest-chrome.json, host_manifest-firefox.json)
+. native_host/      # Script para comunicação com o SO (native_host.py)
+. host_manifest/        # Contém os manifestos do host nativo para Chrome e Firefox (host_manifest-chrome.json, host_manifest-firefox.json)
 ```
 
 ---
