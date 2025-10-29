@@ -1,6 +1,7 @@
 import os
 import json
 from pathlib import Path
+import subprocess
 
 user_home = Path.home()
 base_path = user_home / "Downloads" / "V.O.C.E"
@@ -53,6 +54,13 @@ content_reg = f"""Windows Registry Editor Version 5.00
 file_reg = os.path.join(os.getcwd(), "instalador_host.reg")
 with open(file_reg, "w") as f:
     f.write(content_reg)
+
+try: 
+    subprocess.run(['regedit', '/s', file_reg], check=True)
+    print("Arquivo .reg aplicado com sucesso!")
+
+except subprocess.CalledProcessError as e:
+    print("Erro ao aplicar o arquivo .reg:", e)
 
 print("✅ Arquivo instalador_host.reg gerado com sucesso!")
 print(f"📂 Caminho: {file_reg}")

@@ -18,7 +18,7 @@ const classifier = {
     
     return new Promise((resolve) => {
       // [MUDANÇA] Agora chama o script de previsão final
-      const scriptPath = path.join(__dirname, 'classifier-tf', 'predict_cnn.py');
+      const scriptPath = path.join(__dirname, '..', 'classifier-tf', 'predict_cnn.py');
       const pythonProcess = spawn('python', [scriptPath, domain]);
       let resultJson = '';
       let error = '';

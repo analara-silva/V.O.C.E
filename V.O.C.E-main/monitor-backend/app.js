@@ -38,8 +38,6 @@ app.use(session({
 //                       APLICAÇÃO DAS ROTAS
 // ================================================================
 // Primeiro registra a rota pública de logs
-// (dentro do arquivo routes/api.js deve ter router.post('/logs', ...))
-app.use('/api/logs', apiRoutes); // vai pegar só a rota de logs
 
 // Agora aplica o middleware de autenticação
 app.use(['/api', '/dashboard'], requireLogin);

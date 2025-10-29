@@ -3,13 +3,14 @@ const router = express.Router();
 const { pool } = require('../models/db'); // seu db.js
 const { requireLogin } = require('../middlewares/auth'); // se você separou
 const PDFDocument = require('pdfkit');
+const classifier = require('../classifier/python_classifier')
 
 // ================================================================
 //      APIs PROTEGIDAS DE GESTÃO E DADOS (SQL)
 // ================================================================
 
 // --- Coleta de Logs ---
-router.post('/api/logs', async (req, res) => {
+router.post('/logs', async (req, res) => {
     const logs = Array.isArray(req.body) ? req.body : [req.body];
     if (!logs || logs.length === 0) return res.status(400).send('Nenhum log recebido.');
 
@@ -53,7 +54,7 @@ router.post('/api/logs', async (req, res) => {
 });
 
 // --- Override de Categoria ---
-router.post('/api/override-category', requireLogin, async (req, res) => {
+router.post('/override-category', requireLogin, async (req, res) => {
     console.log("\n--- DEBUG: Recebido POST /api/override-category ---"); // Log de Entrada
     const { url, newCategory } = req.body;
     const professorId = req.session.professorId;
@@ -116,7 +117,7 @@ router.post('/api/override-category', requireLogin, async (req, res) => {
 
 
 // --- Gestão de Turmas ---
-router.post('/api/classes', requireLogin, async (req, res) => {
+router.post('/classes', requireLogin, async (req, res) => {
     const { name } = req.body;
     if (!name || name.trim() === '') return res.status(400).json({ error: 'Nome da turma é obrigatório.' });
     const owner_id = req.session.professorId;
@@ -138,7 +139,7 @@ router.post('/api/classes', requireLogin, async (req, res) => {
     }
 });
 
-router.delete('/api/classes/:classId', requireLogin, async (req, res) => {
+router.delete('/classes/:classId', requireLogin, async (req, res) => {
     const { classId } = req.params;
     const professorId = req.session.professorId;
     try {
@@ -155,7 +156,7 @@ router.delete('/api/classes/:classId', requireLogin, async (req, res) => {
     }
 });
 
-router.post('/api/classes/:classId/share', requireLogin, async (req, res) => {
+router.post('/classes/:classId/share', requireLogin, async (req, res) => {
     const { classId } = req.params;
     const { professorId: professorToShareId } = req.body; // Renamed for clarity
     if (!professorToShareId) return res.status(400).json({ error: 'ID do professor para compartilhar é obrigatório.' });
@@ -177,7 +178,7 @@ router.post('/api/classes/:classId/share', requireLogin, async (req, res) => {
     }
 });
 
-router.delete('/api/classes/:classId/remove-member/:professorId', requireLogin, async (req, res) => {
+router.delete('/classes/:classId/remove-member/:professorId', requireLogin, async (req, res) => {
     const { classId, professorId: memberToRemoveId } = req.params; // Renamed for clarity
     if (!memberToRemoveId) return res.status(400).json({ error: 'ID do professor a remover é obrigatório.' });
     try {
@@ -199,7 +200,7 @@ router.delete('/api/classes/:classId/remove-member/:professorId', requireLogin, 
     }
 });
 
-router.get('/api/classes/:classId/members', requireLogin, async (req, res) => {
+router.get('/classes/:classId/members', requireLogin, async (req, res) => {
     try {
         const { classId } = req.params;
         // Check if current user is a member first
@@ -223,7 +224,7 @@ router.get('/api/classes/:classId/members', requireLogin, async (req, res) => {
 });
 
 // --- Gestão de Alunos ---
-router.post('/api/students', requireLogin, async (req, res) => {
+router.post('/students', requireLogin, async (req, res) => {
     const { fullName, cpf, pc_id } = req.body;
     if (!fullName || fullName.trim() === '') return res.status(400).json({ error: 'Nome do aluno é obrigatório.' });
     const cleanCpf = cpf ? cpf.trim() : null;
@@ -240,7 +241,7 @@ router.post('/api/students', requireLogin, async (req, res) => {
     }
 });
 
-router.get('/api/students/all', requireLogin, async (req, res) => {
+router.get('/students/all', requireLogin, async (req, res) => {
     try {
         const [students] = await pool.query('SELECT * FROM students ORDER BY full_name');
         res.json(students);
@@ -250,7 +251,7 @@ router.get('/api/students/all', requireLogin, async (req, res) => {
     }
 });
 
-router.get('/api/classes/:classId/students', requireLogin, async (req, res) => {
+router.get('/classes/:classId/students', requireLogin, async (req, res) => {
     try {
         const { classId } = req.params;
         // Check if user is member
@@ -269,7 +270,7 @@ router.get('/api/classes/:classId/students', requireLogin, async (req, res) => {
     }
 });
 
-router.post('/api/classes/:classId/add-student', requireLogin, async (req, res) => {
+router.post('/classes/:classId/add-student', requireLogin, async (req, res) => {
     const { classId } = req.params;
     const { studentId } = req.body;
     if (!studentId) return res.status(400).json({ error: 'ID do aluno é obrigatório.' });
@@ -291,7 +292,7 @@ router.post('/api/classes/:classId/add-student', requireLogin, async (req, res) 
     }
 });
 
-router.delete('/api/classes/:classId/remove-student/:studentId', requireLogin, async (req, res) => {
+router.delete('/classes/:classId/remove-student/:studentId', requireLogin, async (req, res) => {
     const { classId, studentId } = req.params;
     try {
          // Check if user is member
@@ -311,7 +312,7 @@ router.delete('/api/classes/:classId/remove-student/:studentId', requireLogin, a
 });
 
 // --- Listagem de Professores ---
-router.get('/api/professors/list', requireLogin, async (req, res) => {
+router.get('/professors/list', requireLogin, async (req, res) => {
     try {
         // Exclude the current user from the list
         const [professors] = await pool.query('SELECT id, full_name, username, email FROM professors WHERE id != ? ORDER BY full_name', [req.session.professorId]);
@@ -331,7 +332,7 @@ function extractHostname(urlString) {
     } catch (e) { return urlString ? urlString.toLowerCase() : ''; } // Retorna string vazia se url for nula/undefined
 }
 
-router.get('/api/data', requireLogin, async (req, res) => {
+router.get('/data', requireLogin, async (req, res) => {
     console.log("--- Iniciando GET /api/data ---"); // Log
     try {
         const professorId = req.session.professorId;
@@ -419,7 +420,7 @@ router.get('/api/data', requireLogin, async (req, res) => {
         res.status(500).json({ error: 'Erro interno ao buscar dados.' });
     }
 });
-router.get('/api/alerts/:alunoId/:type', requireLogin, async (req, res) => {
+router.get('/alerts/:alunoId/:type', requireLogin, async (req, res) => {
     const alunoId = decodeURIComponent(req.params.alunoId);
     const { type } = req.params;
     let categories;
@@ -441,7 +442,7 @@ router.get('/api/alerts/:alunoId/:type', requireLogin, async (req, res) => {
 });
 
 // --- Relatório em PDF ---
-router.get('/api/download-report/:date', requireLogin, async (req, res) => {
+router.get('/download-report/:date', requireLogin, async (req, res) => {
     try {
         // Fetch student names for mapping
         const [students] = await pool.query('SELECT full_name, cpf, pc_id FROM students');

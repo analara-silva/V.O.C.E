@@ -1,5 +1,10 @@
 // Middleware para verificar login do professor
 const requireLogin = (req, res, next) => {
+    // exceção: /api/logs pode passar sem login
+    if (req.originalUrl.startsWith('/api/logs')) {
+        return next();
+    }
+      
     // se não tiver sessão OU não tiver professor logado
     if (!req.session || !req.session.professorId) {
         if (req.path.startsWith('/api')) {
