@@ -161,10 +161,7 @@ dist/
 # ================================================================
 #                   ESPECÍFICOS DO PROJETO
 # ================================================================
-# Modelos de IA treinados (se forem muito grandes)
-# *.pkl
-# *.keras
-# *.h5
+glove.6B.100d.txt
 
 # Datasets grandes
 # *.csv

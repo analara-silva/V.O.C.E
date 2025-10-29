@@ -1,14 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
+const { pool } = require('../models/db');
 const { requireLogin} = require('../middlewares/auth'); // Importa middleware
 
-// Middleware de Autenticação (Mantido aqui, mas pode ser movido para um 'middlewares/auth.js')
-const requireLogin = (req, res, next) => {
-    if (req.session && req.session.uid) {
-        return next();
-    }
-    res.redirect('/login');
-};
 
 // ================================================================
 //                       ROTAS PÚBLICAS

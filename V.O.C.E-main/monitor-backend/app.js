@@ -7,14 +7,14 @@ const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
 
-const requireLogin = require('./middlewares/auth.js')
+const { requireLogin } = require('./middlewares/auth.js')
 
 // Módulos de Rotas (ADICIONADO RECENTEMENTE)
 const apiRoutes = require('./routes/api.js');
 const viewRoutes = require('./routes/views.js'); 
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 8081;
 
 // ================================================================
 //                       CONFIGURAÇÃO DO EXPRESS
@@ -33,15 +33,20 @@ app.use(session({
     cookie: { secure: false, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 } // 1 dia
 }));
 
-app.use(['/api', '/dashboard'], requireLogin);
-
 
 // ================================================================
 //                       APLICAÇÃO DAS ROTAS
 // ================================================================
-app.use('/api', apiRoutes); // Rotas de API (Logs, Classes, Students)
-app.use('/', viewRoutes);  // Rotas de Visualização (Login, Dashboard)
+// Primeiro registra a rota pública de logs
+// (dentro do arquivo routes/api.js deve ter router.post('/logs', ...))
+app.use('/api/logs', apiRoutes); // vai pegar só a rota de logs
 
+// Agora aplica o middleware de autenticação
+app.use(['/api', '/dashboard'], requireLogin);
+
+// Depois registra as rotas protegidas
+app.use('/api', apiRoutes); // o resto da API protegido
+app.use('/', viewRoutes);   // e as views normais
 // ================================================================
 //                       TRATAMENTO DE ERROS E INICIALIZAÇÃO
 // ================================================================

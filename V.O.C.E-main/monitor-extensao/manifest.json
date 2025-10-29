@@ -12,7 +12,6 @@
     "nativeMessaging"
   ],
 
-  "homepage_url": "html/politica-de-privacidade.html",
 
   "host_permissions": [
     "http://localhost:3000/*",

@@ -9,4 +9,4 @@ numpy>=1.24.0
 tensorflow>=2.13.0
 # Serialização de Modelos
 pickle5>=0.0.11; python_version < '3.8'
-matplotlib
+matplotlib>=3.10.7

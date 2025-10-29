@@ -1156,26 +1156,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-        // Adicione este script no final do seu arquivo dashboard.ejs, antes do fechamento do </body>
-        document.addEventListener('DOMContentLoaded', function() {
-            const downloadBtn = document.getElementById('downloadPdfBtn');
-            const dateInput = document.getElementById('reportDate');
-            const errorDiv = document.getElementById('reportError');
+// Adicione este script no final do seu arquivo dashboard.ejs, antes do fechamento do </body>
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadBtn = document.getElementById('downloadPdfBtn');
+    const dateInput = document.getElementById('reportDate');
+    const errorDiv = document.getElementById('reportError');
     
-            // Define a data de ontem como padrão
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            dateInput.value = yesterday.toISOString().split('T')[0];
+    // Define a data de ontem como padrão
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dateInput.value = yesterday.toISOString().split('T')[0];
     
-            downloadBtn.addEventListener('click', function() {
-                const selectedDate = dateInput.value;
-                errorDiv.textContent = ''; // Limpa erros antigos
+    downloadBtn.addEventListener('click', function() {
+        const selectedDate = dateInput.value;
+        errorDiv.textContent = ''; // Limpa erros antigos
     
-                if (!selectedDate) {
-                    errorDiv.textContent = 'Por favor, selecione uma data.';
-                    return;
-                }
-                window.location.href = `/api/download-report/${selectedDate}`;
-            });
+        if (!selectedDate) {
+            errorDiv.textContent = 'Por favor, selecione uma data.';
+            return;
+        }
+        window.location.href = `/api/download-report/${selectedDate}`;
+    });
 
-        });
+});

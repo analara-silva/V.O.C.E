@@ -7,7 +7,7 @@ importScripts('./browser-polyfill.min.js');
 // 🌐 VARIÁVEIS GLOBAIS
 // ============================
 
-const BACKEND_URL = 'http://10.111.9.66:8081/api/logs';
+const BACKEND_URL = 'http://localhost:8081/api/logs';
 const NATIVE_HOST = 'com.meutcc.monitor';
 
 let activeTabs = {};

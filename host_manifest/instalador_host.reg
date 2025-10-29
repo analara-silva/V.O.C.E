@@ -1,9 +1,0 @@
-Windows Registry Editor Version 5.00
-
-; Configura��o para Google Chrome
-[HKEY_CURRENT_USER\SOFTWARE\Google\Chrome\NativeMessagingHosts\com.meutcc.monitor]
-@="C:\Users\60522655823\Downloads\V.O.C.E\host_manifest\host_manifest-chrome.json"
-
-; Configura��o para Mozilla Firefox
-[HKEY_CURRENT_USER\SOFTWARE\Mozilla\NativeMessagingHosts\com.meutcc.monitor]
-@="C:\Users\60522655823\Downloads\V.O.C.E\host_manifest\host_manifest-firefox.json"

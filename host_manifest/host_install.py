@@ -1,13 +1,18 @@
 import os
 import json
+from pathlib import Path
 
-user = os.getlogin()
-user_path = f"C:\\Users\\{user}\\Downloads\\V.O.C.E\\native_host\\run_host.bat"
+user_home = Path.home()
+base_path = user_home / "Downloads" / "V.O.C.E"
+user_path = base_path / "native_host" / "run_host.bat"
+
+chrome_path = base_path / "host_manifest" / "host_manifest-chrome.json"
+firefox_path = base_path / "host_manifest" / "host_manifest-firefox.json"
 
 manifest_chrome = {
     "name": "com.meutcc.monitor",
     "description": "Host nativo para o TCC de monitoramento",
-    "path": user_path,
+    "path": str(user_path),
     "type": "stdio",
     "allowed_origins": ["chrome-extension://<id_da_extensao>/"]
 }
@@ -15,18 +20,14 @@ manifest_chrome = {
 manifest_firefox = {
     "name": "com.meutcc.monitor",
     "description": "Host nativo para o TCC de monitoramento",
-    "path": user_path,
+    "path": str(user_path),
     "type": "stdio",
     "allowed_extensions": ["moz-extension://monitor-tcc@meuprojeto.com"]
 }
 
-# Caminhos
-chrome_path = f"C:\\Users\\{user}\\Downloads\\V.O.C.E\\host_manifest\\host_manifest-chrome.json"
-firefox_path = f"C:\\Users\\{user}\\Downloads\\V.O.C.E\\host_manifest\\host_manifest-firefox.json"
+chrome_path_str = str(chrome_path).replace('\\', '\\\\')
+firefox_path_str = str(firefox_path).replace('\\', '\\\\')
 
-# Cria diretórios se não existirem
-os.makedirs(os.path.dirname(chrome_path), exist_ok=True)
-os.makedirs(os.path.dirname(firefox_path), exist_ok=True)
 
 # Escreve os manifests
 with open(chrome_path, "w") as f:
@@ -39,13 +40,13 @@ print("✅ Manifests do Chrome e Firefox gerados com sucesso!")
 
 content_reg = f"""Windows Registry Editor Version 5.00
 
-; Configuração para Google Chrome
+; Google Chrome
 [HKEY_CURRENT_USER\\SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\com.meutcc.monitor]
-@="{chrome_path}"
+@="{chrome_path_str}"
 
-; Configuração para Mozilla Firefox
+; Mozilla Firefox
 [HKEY_CURRENT_USER\\SOFTWARE\\Mozilla\\NativeMessagingHosts\\com.meutcc.monitor]
-@="{firefox_path}"
+@="{firefox_path_str}"
 """
 
 # salva o arquivo .reg

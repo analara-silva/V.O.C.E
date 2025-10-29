@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../models/db'); // seu db.js
+const { pool } = require('../models/db'); // seu db.js
 const { requireLogin } = require('../middlewares/auth'); // se você separou
 const PDFDocument = require('pdfkit');
 
