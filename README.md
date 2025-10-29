@@ -28,16 +28,6 @@ O **V.O.C.E** é uma plataforma completa desenvolvida como parte do **Trabalho d
 
 ---
 
-## Arquivos confidenciais
-
-Os seguintes arquivos **não estão no repositório** por conterem informações sensíveis:
-
-- `monitor-backend/classifier-tf/glove6b100d.txt`
-
-Você pode obter esses arquivos [neste link do Google Drive](https://drive.google.com/drive/folders/1IOB0dG8gS1JKYn_pnEFNd0lESFhY2myu?usp=sharing).
-
----
-
 ## Estrutura do Projeto
 
 
