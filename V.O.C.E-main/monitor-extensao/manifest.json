@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "V.O.C.E",
-  "version": "1.2.0",
+  "version": "1.1",
   "description": "Monitora o tempo de uso de sites e envia para análise (versão com configuração manual).",
   "minimum_chrome_version": "114",
 
@@ -14,8 +14,9 @@
 
 
   "host_permissions": [
-    "http://localhost:3000/*",
-    "http://localhost:8081/"
+    "http://10.111.9.63:8081/*",
+    "http://localhost:8080/*",
+    "http://localhost:3000/*"
   ],
 
   "background": {

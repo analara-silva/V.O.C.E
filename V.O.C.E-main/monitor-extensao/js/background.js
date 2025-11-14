@@ -1,38 +1,29 @@
-// background.js - VERSÃO UNIFICADA (Chrome + Firefox) com Native Messaging
+// background.js - Versão otimizada com batching inteligente
 
-// Polyfill para compatibilidade com browser.*
 importScripts('./browser-polyfill.min.js');
-
-// ============================
-// 🌐 VARIÁVEIS GLOBAIS
-// ============================
 
 const BACKEND_URL = 'http://localhost:8081/api/logs';
 const NATIVE_HOST = 'com.meutcc.monitor';
 
 let activeTabs = {};
 let dataBuffer = [];
-let osUsername = 'carregando...'; // Valor inicial até o nome do usuário ser carregado
+let osUsername = 'Desconhecido';
+const MAX_BATCH_SIZE = 200; // Envia imediatamente quando passar disso
 
 // ============================
-// 🧠 FUNÇÃO: Obter nome de usuário via Native Messaging
+// 🧠 OBTER USUÁRIO DO SISTEMA
 // ============================
 
 function getOSUsername() {
-  console.log(`Tentando obter nome de usuário via host nativo: ${NATIVE_HOST}`);
-
   browser.runtime.sendNativeMessage(NATIVE_HOST, { text: "get_username_request" })
     .then(response => {
       if (response?.status === 'success') {
         osUsername = response.username;
-        console.log('Nome de usuário do SO obtido com sucesso:', osUsername);
       } else {
-        console.error('Erro do host nativo:', response?.message || 'Resposta vazia');
         osUsername = 'erro_script_host';
       }
     })
-    .catch(error => {
-      console.error('ERRO NATIVE MESSAGING (Conexão):', error);
+    .catch(() => {
       osUsername = 'erro_host_nao_encontrado';
     });
 }
@@ -40,32 +31,44 @@ function getOSUsername() {
 getOSUsername();
 
 // ============================
-// 🛰️ FUNÇÃO: Enviar dados para o servidor
+// 🚀 ENVIO com Batching Inteligente
 // ============================
 
-async function sendDataToServer() {
+async function sendBatch() {
   if (dataBuffer.length === 0) return;
+
+  const batch = [...dataBuffer];
+  dataBuffer = []; // esvazia antes do envio
 
   try {
     const response = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dataBuffer),
+      body: JSON.stringify(batch)
     });
 
-    if (response.ok) {
-      console.log('Dados enviados com sucesso.');
-      dataBuffer = [];
+    if (!response.ok) {
+      console.error("Falha ao enviar batch:", response.status);
+      dataBuffer.push(...batch); // devolve ao buffer caso falhe
     } else {
-      console.error('Falha ao enviar dados:', response.statusText);
+      console.log(`✔ Enviados ${batch.length} registros.`);
     }
-  } catch (error) {
-    console.error('Erro de rede ao enviar dados:', error);
+  } catch (err) {
+    console.error("Erro ao enviar batch:", err);
+    dataBuffer.push(...batch);
+  }
+}
+
+// dispara envio se buffer ficar muito grande
+function checkBatchSize() {
+  if (dataBuffer.length >= MAX_BATCH_SIZE) {
+    console.log(`⚡ Buffer cheio (${dataBuffer.length}). Enviando imediatamente...`);
+    sendBatch();
   }
 }
 
 // ============================
-// ⏱️ FUNÇÃO: Registrar tempo de uso da aba
+// 📌 REGISTRO DE TEMPO
 // ============================
 
 function recordTime(tabId, url) {
@@ -73,21 +76,23 @@ function recordTime(tabId, url) {
   if (!session) return;
 
   const durationSeconds = Math.round((Date.now() - session.startTime) / 1000);
-  const domain = new URL(url).hostname;
 
   if (durationSeconds > 5) {
+    const domain = new URL(url).hostname;
     dataBuffer.push({
       aluno_id: osUsername,
       url: domain,
       durationSeconds,
       timestamp: new Date().toISOString(),
     });
-    console.log(`[${osUsername}] Tempo para ${domain}: ${durationSeconds}s`);
+
+    console.log(`+ Registro armazenado (${domain} - ${durationSeconds}s)`);
+    checkBatchSize();
   }
 }
 
 // ============================
-// 📌 EVENTO: Mudança de aba ativa
+// 🔄 EVENTOS DE ABA
 // ============================
 
 browser.tabs.onActivated.addListener(async (activeInfo) => {
@@ -96,12 +101,10 @@ browser.tabs.onActivated.addListener(async (activeInfo) => {
   if (previousTabId) {
     try {
       const previousTab = await browser.tabs.get(parseInt(previousTabId));
-      if (previousTab?.url?.startsWith('http')) {
+      if (previousTab.url?.startsWith('http')) {
         recordTime(parseInt(previousTabId), previousTab.url);
       }
-    } catch (error) {
-      console.error('Erro ao acessar aba anterior:', error);
-    }
+    } catch (e) {}
     delete activeTabs[previousTabId];
   }
 
@@ -110,13 +113,11 @@ browser.tabs.onActivated.addListener(async (activeInfo) => {
     if (currentTab.url?.startsWith('http')) {
       activeTabs[currentTab.id] = { startTime: Date.now() };
     }
-  } catch (error) {
-    console.error('Erro ao acessar aba atual:', error);
-  }
+  } catch (e) {}
 });
 
 // ============================
-// 🔄 EVENTO: Atualização de aba (URL mudou)
+// 🌐 URL mudou
 // ============================
 
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -127,13 +128,13 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // ============================
-// ⏰ ALARME: Envio periódico dos dados
+// ⏱️ ENVIO PERIÓDICO
 // ============================
 
-browser.alarms.create('sendData', { periodInMinutes: 1 });
+browser.alarms.create('sendData', { periodInMinutes: 10 });
 
-browser.alarms.onAlarm.addListener(alarm => {
+browser.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'sendData') {
-    sendDataToServer();
+    sendBatch();
   }
 });

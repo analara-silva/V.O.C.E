@@ -1,12 +1,12 @@
 # V.O.C.E - Visualização e Observação do Comportamento Estudantil
 
-![Versão](https://img.shields.io/badge/version-4.1-blue)
+![Versão](https://img.shields.io/badge/version-1.1-blue)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 
 ---
 
-**👤 Autores:** Ana Lara, Gustavo, Sidney  
-**🎓 Orientadores:** Leonardo Gomes, Anderson Roberto  
+**👤 Autores:** Ana Lara Fernandes, Gustavo Emanuel Alves, Sidney da Silva Paulino  
+**🎓 Orientadores:** Leonardo Gomes e Anderson Roberto  
 **🏫 Instituição:** SENAI-SP  
 **📘 Projeto:** Trabalho de Conclusão de Curso (TCC) – Curso Técnico em Desenvolvimento de Sistemas
 
