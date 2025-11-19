@@ -162,7 +162,6 @@ dist/
 #                   ESPECÍFICOS DO PROJETO
 # ================================================================
 glove.6B.100d.txt
-host_manifest
 training_history.png
 # Datasets grandes
 # *.csv
