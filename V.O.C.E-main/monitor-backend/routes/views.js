@@ -89,6 +89,11 @@ router.get('/logout', (req, res) => {
     });
 });
 
+router.get('/termos', (req, res) => {res.render('termos-de-uso');});
+
+router.get('/politicas', (req, res) => {res.render('politicas-de-privacidade');});
+
+
 // ================================================================
 //      ROTAS DE PÁGINAS PROTEGIDAS (RENDERIZAÇÃO EJS COM DADOS SQL)
 // ================================================================

@@ -5,7 +5,7 @@
 
 ---
 
-**👤 Autores:** Ana Lara Fernandes, Gustavo Emanuel Alves, Sidney da Silva Paulino  
+**👤 Autores:** Ana Lara Fernandes, Gustavo Emanuel Alves e Sidney da Silva Paulino  
 **🎓 Orientadores:** Leonardo Gomes e Anderson Roberto  
 **🏫 Instituição:** SENAI-SP  
 **📘 Projeto:** Trabalho de Conclusão de Curso (TCC) – Curso Técnico em Desenvolvimento de Sistemas
@@ -18,12 +18,12 @@ O **V.O.C.E** é uma plataforma completa desenvolvida como parte do **Trabalho d
 
 ## Funcionalidades Principais
 
-- **Monitoramento Multi-navegador**: Extensões para Google Chrome e Firefox.
+- **Monitoramento Multi-navegador**: Extensão compátivel com todos os navegadores.
 - **Identificação de Alunos**: Identificação flexível através do nome de usuário do sistema operacional, CPF ou ID do computador.
 - **Classificação com IA**: URLs são automaticamente categorizadas em grupos como "Educacional", "Rede Social", "Jogos", etc., utilizando técnicas de processamento de linguagem natural como GloVe.
 - **Dashboard do Professor**: Interface web para gestão de turmas, alunos e visualização de dados de navegação.
 - **Segurança e Privacidade**: Autenticação de professores, senhas criptografadas e isolamento de dados por turma.
-- **Armazenamento Escalável**: Utiliza o Google Firebase (Firestore) como banco de dados, garantindo performance e escalabilidade.
+- **Armazenamento Escalável**: Utiliza MySQL como banco de dados, garantindo performance e escalabilidade.
 - **Arquitetura Resiliente**: Sistema de fallback que utiliza um classificador simples caso a IA principal falhe.
 
 ---

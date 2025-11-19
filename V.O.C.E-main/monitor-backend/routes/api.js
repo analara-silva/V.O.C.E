@@ -12,9 +12,11 @@ const classifier = require('../classifier/python_classifier')
 // --- Coleta de Logs ---
 router.post('/logs', async (req, res) => {
     const logs = Array.isArray(req.body) ? req.body : [req.body];
+    const io = req.io
     if (!logs || logs.length === 0) return res.status(400).send('Nenhum log recebido.');
 
     try {
+        // Obter hostnames únicos e aplicar overrides
         const uniqueHostnames = [...new Set(logs.map(log => {
             try { return new URL(`http://${log.url}`).hostname.toLowerCase(); }
             catch (e) { return log.url.toLowerCase(); }
@@ -22,33 +24,51 @@ router.post('/logs', async (req, res) => {
 
         let overrides = {};
         if (uniqueHostnames.length > 0) {
-            const [overrideRows] = await pool.query('SELECT hostname, category FROM category_overrides WHERE hostname IN (?)', [uniqueHostnames]);
+            const [overrideRows] = await pool.query(
+                'SELECT hostname, category FROM category_overrides WHERE hostname IN (?)', 
+                [uniqueHostnames]
+            );
             overrides = overrideRows.reduce((map, row) => { map[row.hostname] = row.category; return map; }, {});
         }
 
-        const sql = 'INSERT INTO logs (aluno_id, url, duration, categoria, timestamp) VALUES ?';
-        const values = await Promise.all(logs.map(async (log) => {
+        // Preparar dados para inserção
+        const values = await Promise.all(logs.map(async log => {
             let category = 'Não Categorizado';
             let hostname = '';
-             try { hostname = new URL(`http://${log.url}`).hostname.toLowerCase(); }
-             catch(e) { hostname = log.url.toLowerCase(); }
+            try { hostname = new URL(`http://${log.url}`).hostname.toLowerCase(); }
+            catch(e) { hostname = log.url.toLowerCase(); }
 
             if (overrides[hostname]) {
                 category = overrides[hostname];
-                // console.log(`[Override] ${hostname} -> ${category}`);
-            } else if (log.url) { // Only classify if URL exists
+            } else if (log.url) {
                 category = await classifier.categorizar(log.url);
-                // console.log(`[Auto] ${log.url} -> ${category}`);
             }
 
             return [ log.aluno_id, log.url || '', log.durationSeconds || 0, category, new Date(log.timestamp || Date.now()) ];
         }));
 
-        if (values.length > 0) { await pool.query(sql, [values]); }
+        if (values.length > 0) await pool.query(
+            'INSERT INTO logs (aluno_id, url, duration, categoria, timestamp) VALUES ?', [values]
+        );
+
+        // Monta contagem por categoria para atualizar o gráfico
+        const categoryCounts = {};
+        values.forEach(([aluno_id, url, duration, categoria]) => {
+            categoryCounts[categoria] = (categoryCounts[categoria] || 0) + 1;
+        });
+
+        if (io) {
+            io.emit('logs_updated', { 
+                count: values.length,
+                categoryCounts,
+                logs: values.map(([aluno_id, url, duration, categoria, timestamp]) => ({ aluno_id, url, duration, categoria, timestamp })) 
+            });
+        }
+
         res.status(200).send('Logs salvos com sucesso.');
 
     } catch (error) {
-        console.error('Erro ao salvar logs no MySQL com overrides:', error);
+        console.error('Erro ao salvar logs:', error);
         res.status(500).send('Erro interno ao processar os logs.');
     }
 });

@@ -2,12 +2,12 @@ require('dotenv').config();
 mysql = require('mysql2/promise');
 
 const dbConfig = {
-    host: process.env.HOST , // Or the IP/hostname of your external DB server
-    user: process.env.USER, // Replace with your MySQL username
-    password: process.env.PASSWORD, // Replace with your MySQL password
-    database: process.env.DATABASE, // Nome oficial do banco
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
     waitForConnections: true,
-    connectionLimit: 10, // Adjust as needed
+    connectionLimit: 10,
     queueLimit: 0
 };
 const pool = mysql.createPool(dbConfig);

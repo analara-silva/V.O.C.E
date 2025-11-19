@@ -23,6 +23,41 @@ let state = {
     }
 };
 
+const socket = io();
+
+socket.on('connect', () => {
+    console.log("Conectado ao Socket:", socket.id);
+});
+
+socket.on('logs_updated', (data) => {
+    console.log("📡 Recebido do backend:", data);
+});
+
+// Função principal de atualização do dashboard em tempo real
+async function handleRealtimeUpdate(data) {
+    console.log('Evento de logs recebidos via Socket.IO:', data);
+    
+    // 1. Exibe uma notificação temporária (opcional, mas útil)
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: `Novos logs recebidos (${data.count})! Atualizando dashboard...`,
+        showConfirmButton: false,
+        timer: 3000
+    });
+
+    // 2. Busca os novos dados do servidor (logs e summary)
+    // É necessário buscar novamente, pois o backend apenas notificou, não enviou todos os dados.
+    await fetchDataPanels(); 
+
+    // 3. Re-aplica os filtros e renderiza o dashboard com os novos dados
+    // Isso garante que o estado (filtros, paginação) seja mantido.
+    applyFiltersAndRender();
+}
+
+socket.on('logs_updated', handleRealtimeUpdate);
+
 // --- FUNÇÕES DE MODAL ---
 // (As funções de modal como openEditClassModal, openShareModal, etc. continuam iguais)
 function openEditClassModal(classId, currentName) {
@@ -692,6 +727,7 @@ async function fetchStudentsInClass(classId) {
     }
 }
 
+// Função que busca os dados do servidor (logs e summary)
 async function fetchDataPanels() {
     if (!document.getElementById('dashboard-content')) return;
     try {
@@ -700,9 +736,10 @@ async function fetchDataPanels() {
         state.allSummary = summary;
     } catch (error) {
         console.error("Erro ao buscar dados do painel:", error);
-        updateUserSummaryTable([]);
-        updateLogsTable([]);
-        updateChart([]);
+        // Não limpa o estado em caso de erro para não piscar a tela, apenas loga.
+        // updateLogsTable([]);
+        // updateUserSummaryTable([]);
+        // updateChart([]);
     }
 }
 

@@ -8,7 +8,7 @@ const path = require('path');
 const categoryMap = {};
 
 try {
-    const datasetPath = path.join(__dirname, 'classifier-tf', 'dataset.csv');
+    const datasetPath = path.join(__dirname, '..', 'classifier-tf', 'dataset.csv');
     const csvData = fs.readFileSync(datasetPath, 'utf8');
     const lines = csvData.split(/\r?\n/);
     lines.forEach(line => {

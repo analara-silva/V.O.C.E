@@ -20,10 +20,10 @@
 --
 
 -- Cria o banco de dados se ainda não existir
-CREATE DATABASE IF NOT EXISTS 'v_o_c_e' CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE DATABASE IF NOT EXISTS `v_o_c_e` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- Seleciona o banco para usar
-USE 'v_o_c_e';
+USE `v_o_c_e`;
 
 DROP TABLE IF EXISTS `category_overrides`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

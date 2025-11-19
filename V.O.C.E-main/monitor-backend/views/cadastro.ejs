@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-    <head>
+<head>
         <%- include('partials/header') %>
-        </head>
+        <link rel="shortcut icon" href="./icons/icon16.png" type="image/png">
+</head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
     <header class="bg-white shadow-md border-b-2 border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
@@ -40,8 +41,21 @@
                     <p class="text-sm text-red-700"></p>
                 </div>
 
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        <input id="terms" name="terms" type="checkbox" required class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300 rounded">
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="terms" class="font-medium text-gray-700">
+                            Li e concordo com os 
+                            <a href="/termos" class="text-red-700 hover:text-red-800 underline">Termos de Uso</a> e 
+                            <a href="/politicas" class="text-red-700 hover:text-red-800 underline">Política de Privacidade</a>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="pt-2">
-                    <button type="submit" class="btn-submit">Registar Conta</button>
+                    <button type="submit" id="submitButton" class="btn-submit opacity-50 cursor-not-allowed" disabled>Registar Conta</button>
                 </div>
                 <div class="text-center text-sm mt-4">
                     <p class="text-gray-600">
@@ -62,7 +76,31 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('cadastroForm');
+            const submitButton = document.getElementById('submitButton');
+            const termsCheckbox = document.getElementById('terms');
+            const formInputs = form.querySelectorAll('input[required]');
             const errorMessageDiv = document.getElementById('error-message');
+            
+            function checkFormValidity() {
+            const isFormValid = Array.from(formInputs).every(input => input.value.trim() !== '');
+            const isTermsChecked = termsCheckbox.checked;
+
+            if (isFormValid && isTermsChecked) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                submitButton.disabled = true;
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            }
+
+
+            // Adiciona listeners para verificar a validade a cada mudança
+            formInputs.forEach(input => input.addEventListener('input', checkFormValidity));
+            termsCheckbox.addEventListener('change', checkFormValidity);
+
+            // Verifica a validade inicial ao carregar a página
+            checkFormValidity();
     
             form.addEventListener('submit', async (e) => {
                 e.preventDefault(); // Impede o envio padrão do formulário
@@ -72,9 +110,9 @@
                 const data = Object.fromEntries(formData.entries());
     
                 // Pega o botão de submit para dar feedback visual
-                const submitButton = form.querySelector('button[type="submit"]');
                 const originalButtonText = submitButton.textContent;
                 submitButton.disabled = true;
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
                 submitButton.textContent = 'Registrando...';
     
                 try {
@@ -114,8 +152,9 @@
                     // errorMessageDiv.classList.remove('hidden');
                 } finally {
                     // Restaura o botão
-                    submitButton.disabled = false;
                     submitButton.textContent = originalButtonText;
+                    // Reativa o botão se a validação do formulário e o checkbox estiverem ok
+                    checkFormValidity();
                 }
             });
         });

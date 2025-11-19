@@ -14,7 +14,7 @@ const apiRoutes = require('./routes/api.js');
 const viewRoutes = require('./routes/views.js'); 
 
 const app = express();
-const port = process.env.PORT || 8081;
+const port = 8081;
 
 // ================================================================
 //                       CONFIGURAÇÃO DO EXPRESS
