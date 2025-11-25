@@ -23,40 +23,42 @@ let state = {
     }
 };
 
-const socket = io();
+const socket = io(); // <--- 1. Inicializa a conexão com o servidor
 
 socket.on('connect', () => {
-    console.log("Conectado ao Socket:", socket.id);
-});
-
-socket.on('logs_updated', (data) => {
-    console.log("📡 Recebido do backend:", data);
+    console.log("Conectado ao Socket:", socket.id); // Confirma a conexão
 });
 
 // Função principal de atualização do dashboard em tempo real
+// Função otimizada de atualização em tempo real
 async function handleRealtimeUpdate(data) {
     console.log('Evento de logs recebidos via Socket.IO:', data);
     
-    // 1. Exibe uma notificação temporária (opcional, mas útil)
+    // 1. Notificação
     Swal.fire({
         toast: true,
         position: 'top-end',
         icon: 'info',
-        title: `Novos logs recebidos (${data.count})! Atualizando dashboard...`,
+        title: `Novos logs recebidos (${data.count})!`,
         showConfirmButton: false,
-        timer: 3000
+        timer: 2000
     });
 
-    // 2. Busca os novos dados do servidor (logs e summary)
-    // É necessário buscar novamente, pois o backend apenas notificou, não enviou todos os dados.
-    await fetchDataPanels(); 
+    // 2. NOVO: Atualiza o estado diretamente com os dados recebidos
+    // Em vez de fazer uma nova requisição, adiciona os novos logs ao estado
+    if (data.logs && Array.isArray(data.logs)) {
+        // Adiciona os novos logs no início do array
+        state.allLogs = [...data.logs, ...state.allLogs];
+        
+        // Atualiza o summary se necessário
+        // (Você pode precisar ajustar o backend para enviar o summary atualizado também)
+    }
 
-    // 3. Re-aplica os filtros e renderiza o dashboard com os novos dados
-    // Isso garante que o estado (filtros, paginação) seja mantido.
+    // 3. Re-aplica os filtros e renderiza com os novos dados
     applyFiltersAndRender();
 }
 
-socket.on('logs_updated', handleRealtimeUpdate);
+socket.on('logs_updated', handleRealtimeUpdate); // <--- 2. Ouve o evento emitido pelo servidor
 
 // --- FUNÇÕES DE MODAL ---
 // (As funções de modal como openEditClassModal, openShareModal, etc. continuam iguais)
@@ -731,15 +733,23 @@ async function fetchStudentsInClass(classId) {
 async function fetchDataPanels() {
     if (!document.getElementById('dashboard-content')) return;
     try {
-        const { logs, summary } = await apiCall(`/api/data`);
+        const dateInput = document.getElementById('dashboard-date-filter');
+        const targetDate = dateInput ? dateInput.value : '';
+        
+        // NOVO: Envia o classId selecionado
+        const classId = state.activeClassId;
+        
+        let queryString = '';
+        if (targetDate) queryString += `?date=${targetDate}`;
+        if (classId && classId !== 'null') {
+            queryString += (queryString ? '&' : '?') + `classId=${classId}`;
+        }
+        
+        const { logs, summary } = await apiCall(`/api/data${queryString}`);
         state.allLogs = logs;
         state.allSummary = summary;
     } catch (error) {
         console.error("Erro ao buscar dados do painel:", error);
-        // Não limpa o estado em caso de erro para não piscar a tela, apenas loga.
-        // updateLogsTable([]);
-        // updateUserSummaryTable([]);
-        // updateChart([]);
     }
 }
 

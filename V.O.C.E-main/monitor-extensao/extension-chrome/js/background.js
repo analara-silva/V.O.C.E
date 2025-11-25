@@ -172,7 +172,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // ⏱️ ENVIO PERIÓDICO
 // ============================
 
-chrome.alarms.create("sendData", { periodInMinutes: 1 });
+chrome.alarms.create("sendData", { periodInMinutes: 10 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "sendData") {

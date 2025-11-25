@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "V.O.C.E",
   "version": "1.1",
-  "description": "Monitora o tempo de uso de sites e envia para análise.",
+  "description": "Monitora o tempo de uso de sites e envia para análise. Icons by Icons8",
   "minimum_chrome_version": "114",
 
   "permissions": [

@@ -13,7 +13,7 @@ print("Iniciando o processo de treinamento avançado (CNN)...")
 # 1. Carregar Dados
 print("[1/6] Carregando dados...")
 # Garante que a primeira linha seja tratada como cabeçalho
-df = pd.read_csv('./classifier-tf/dataset.csv', header=0, names=['url', 'categoria'])
+df = pd.read_csv('../dataset.csv', header=0, names=['url', 'categoria'])
 df.dropna(subset=['url', 'categoria'], inplace=True) # Remove linhas vazias
 
 urls = [str(url).lower().replace('www.', '') for url in df['url'].values]
@@ -61,10 +61,10 @@ history = model.fit(X_data, labels,
 
 # 5. Salvar o Modelo e os Metadados
 print("[5/6] Salvando modelo e metadados...")
-model.save('./classifier-tf/model_cnn.keras')
-with open('./classifier-tf/tokenizer.pkl', 'wb') as f:
+model.save('../model_cnn.keras')
+with open('../tokenizer.pkl', 'wb') as f:
     pickle.dump(tokenizer, f)
-with open('./classifier-tf/labels.pkl', 'wb') as f:
+with open('../labels.pkl', 'wb') as f:
     pickle.dump(label_names, f)
 
 print("Modelo CNN e metadados salvos com sucesso!")
@@ -92,6 +92,6 @@ plt.ylabel('Perda')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig('./classifier-tf/training_history.png')
+plt.savefig('../training_history.png')
 print("Gráfico 'training_history.png' salvo com sucesso!")
 

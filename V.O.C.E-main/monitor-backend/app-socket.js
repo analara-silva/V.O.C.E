@@ -11,6 +11,7 @@ const { requireLogin } = require('./middlewares/auth.js')
 
 // Módulos de Rotas (ADICIONADO RECENTEMENTE)
 const apiRoutes = require('./routes/api.js');
+const publicApiRoutes = require('./routes/public_api.js')
 const viewRoutes = require('./routes/views.js'); 
 
 const app = express();
@@ -48,16 +49,20 @@ app.use(session({
 // ================================================================
 // Primeiro registra a rota pública de logs
 
-// Agora aplica o middleware de autenticação
-app.use(['/api', '/dashboard'], requireLogin);
-
-// Depois registra as rotas protegidas
+// Registra a rota /api/logs (pública) e injeta o 'io'
 app.use('/api', (req, res, next) => {
     req.io = io;
     next();
-}, apiRoutes);
-; // o resto da API protegido
-app.use('/', viewRoutes);   // e as views normais
+}, publicApiRoutes); 
+
+// Aplica o middleware de autenticação para o restante
+app.use(['/api', '/dashboard'], requireLogin);
+
+// Registra as rotas protegidas
+app.use('/api', apiRoutes); 
+
+// Registra as rotas normais
+app.use('/', viewRoutes);  
 // ================================================================
 //                       TRATAMENTO DE ERROS E INICIALIZAÇÃO
 // ================================================================

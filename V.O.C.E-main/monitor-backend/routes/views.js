@@ -89,15 +89,15 @@ router.get('/logout', (req, res) => {
     });
 });
 
-router.get('/termos', (req, res) => {res.render('termos-de-uso');});
+router.get('/termos', (req, res) => {res.render('termos-de-uso', { pageTitle: 'V.O.C.E | Termos de Uso' });});
 
-router.get('/politicas', (req, res) => {res.render('politicas-de-privacidade');});
+router.get('/politicas', (req, res) => {res.render('politicas-de-privacidade', { pageTitle: 'V.O.C.E | Politícas de Privacidade' });});
 
 
 // ================================================================
 //      ROTAS DE PÁGINAS PROTEGIDAS (RENDERIZAÇÃO EJS COM DADOS SQL)
 // ================================================================
-router.get('/dashboard', requireLogin, async (req, res) => {
+router.get('/dashboard',  async (req, res) => {
     try {
         const [classes] = await pool.query('SELECT c.id, c.name FROM classes c JOIN class_members cm ON c.id = cm.class_id WHERE cm.professor_id = ? ORDER BY c.name', [req.session.professorId]);
         // Fetch distinct categories directly from logs table for the filter dropdown
@@ -110,7 +110,7 @@ router.get('/dashboard', requireLogin, async (req, res) => {
     }
 });
 
-router.get('/gerenciamento', requireLogin, async (req, res) => {
+router.get('/gerenciamento', async (req, res) => {
     try {
         const [classes] = await pool.query('SELECT c.id, c.name FROM classes c JOIN class_members cm ON c.id = cm.class_id WHERE cm.professor_id = ? ORDER BY c.name', [req.session.professorId]);
         res.render('gerenciamento', { pageTitle: 'Gestão', professorName: req.session.professorName, classes });
@@ -120,7 +120,7 @@ router.get('/gerenciamento', requireLogin, async (req, res) => {
     }
 });
 
-router.get('/perfil', requireLogin, async (req, res) => {
+router.get('/perfil', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT id, full_name, username, email FROM professors WHERE id = ?', [req.session.professorId]);
         if (rows.length === 0) return res.redirect('/logout'); // Should not happen if logged in
@@ -131,7 +131,7 @@ router.get('/perfil', requireLogin, async (req, res) => {
     }
 });
 
-router.post('/perfil', requireLogin, async (req, res) => {
+router.post('/perfil', async (req, res) => {
     const { fullName } = req.body;
     if (!fullName || fullName.trim() === '') {
         // Redirect back with an error message (optional)

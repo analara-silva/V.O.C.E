@@ -1,6 +1,0 @@
-1. Programar o CSS da página politica-de-privacidade
-2. Criar icons para a extensão (16x16, 32x32, 48x48, 128x128)
-3. Implementar o Web Socket.io
-4. Criptografar o CPF
-5. Pesquisar o RabbitMQ
-6. Otimizar o backend (Banco de dados)

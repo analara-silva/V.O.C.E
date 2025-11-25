@@ -187,7 +187,7 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // ⏱️ ENVIO PERIÓDICO
 // ============================
 
-browser.alarms.create("sendData", { periodInMinutes: 1 });
+browser.alarms.create("sendData", { periodInMinutes: 10 });
 
 browser.alarms.onAlarm.addListener((alarm) => {
   if (!ready) return;

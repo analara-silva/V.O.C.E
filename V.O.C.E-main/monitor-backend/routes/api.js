@@ -4,74 +4,11 @@ const { pool } = require('../models/db'); // seu db.js
 const { requireLogin } = require('../middlewares/auth'); // se você separou
 const PDFDocument = require('pdfkit');
 const classifier = require('../classifier/python_classifier')
+const { extractHostname } = require('../utils/url-helper');
 
 // ================================================================
 //      APIs PROTEGIDAS DE GESTÃO E DADOS (SQL)
-// ================================================================
-
-// --- Coleta de Logs ---
-router.post('/logs', async (req, res) => {
-    const logs = Array.isArray(req.body) ? req.body : [req.body];
-    const io = req.io
-    if (!logs || logs.length === 0) return res.status(400).send('Nenhum log recebido.');
-
-    try {
-        // Obter hostnames únicos e aplicar overrides
-        const uniqueHostnames = [...new Set(logs.map(log => {
-            try { return new URL(`http://${log.url}`).hostname.toLowerCase(); }
-            catch (e) { return log.url.toLowerCase(); }
-        }).filter(Boolean))];
-
-        let overrides = {};
-        if (uniqueHostnames.length > 0) {
-            const [overrideRows] = await pool.query(
-                'SELECT hostname, category FROM category_overrides WHERE hostname IN (?)', 
-                [uniqueHostnames]
-            );
-            overrides = overrideRows.reduce((map, row) => { map[row.hostname] = row.category; return map; }, {});
-        }
-
-        // Preparar dados para inserção
-        const values = await Promise.all(logs.map(async log => {
-            let category = 'Não Categorizado';
-            let hostname = '';
-            try { hostname = new URL(`http://${log.url}`).hostname.toLowerCase(); }
-            catch(e) { hostname = log.url.toLowerCase(); }
-
-            if (overrides[hostname]) {
-                category = overrides[hostname];
-            } else if (log.url) {
-                category = await classifier.categorizar(log.url);
-            }
-
-            return [ log.aluno_id, log.url || '', log.durationSeconds || 0, category, new Date(log.timestamp || Date.now()) ];
-        }));
-
-        if (values.length > 0) await pool.query(
-            'INSERT INTO logs (aluno_id, url, duration, categoria, timestamp) VALUES ?', [values]
-        );
-
-        // Monta contagem por categoria para atualizar o gráfico
-        const categoryCounts = {};
-        values.forEach(([aluno_id, url, duration, categoria]) => {
-            categoryCounts[categoria] = (categoryCounts[categoria] || 0) + 1;
-        });
-
-        if (io) {
-            io.emit('logs_updated', { 
-                count: values.length,
-                categoryCounts,
-                logs: values.map(([aluno_id, url, duration, categoria, timestamp]) => ({ aluno_id, url, duration, categoria, timestamp })) 
-            });
-        }
-
-        res.status(200).send('Logs salvos com sucesso.');
-
-    } catch (error) {
-        console.error('Erro ao salvar logs:', error);
-        res.status(500).send('Erro interno ao processar os logs.');
-    }
-});
+// ================================================================ 
 
 // --- Override de Categoria ---
 router.post('/override-category', requireLogin, async (req, res) => {
@@ -121,7 +58,7 @@ router.post('/override-category', requireLogin, async (req, res) => {
         // Verifica se alguma linha foi afetada (inserida ou atualizada)
         if (result.affectedRows > 0 || result.warningStatus === 0) { // warningStatus 0 pode indicar update sem mudança real
              console.log("--- DEBUG: Operação no DB bem-sucedida."); // Log Sucesso DB
-             res.json({ success: true, message: `Categoria para "${hostname}" atualizada para "${newCategory.trim}".` });
+             res.json({ success: true, message: `Categoria para "${hostname}" atualizada para "${newCategory.trim()}".` });
         } else {
              console.log("--- DEBUG: Query executada, mas nenhuma linha afetada (?).", result); // Log Nenhuma Mudança
              // Talvez a categoria já fosse a mesma? Ou erro inesperado?
@@ -344,25 +281,42 @@ router.get('/professors/list', requireLogin, async (req, res) => {
 });
 
 // --- Dados para Dashboard e Alertas ---
-// Helper function (mantida)
-function extractHostname(urlString) {
-    try {
-        let fullUrl = urlString.startsWith('http://') || urlString.startsWith('https://') ? urlString : `http://${urlString}`;
-        return new URL(fullUrl).hostname.toLowerCase();
-    } catch (e) { return urlString ? urlString.toLowerCase() : ''; } // Retorna string vazia se url for nula/undefined
-}
 
 router.get('/data', requireLogin, async (req, res) => {
-    console.log("--- Iniciando GET /api/data ---"); // Log
+    console.log("--- Iniciando GET /api/data ---");
     try {
         const professorId = req.session.professorId;
+        const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+        const classId = req.query.classId; // NOVO: Pega o ID da turma
+        
+        console.log(`--- Buscando logs para a data: ${targetDate}, turma: ${classId || 'todas'}`);
 
-        // 1. Fetch RAW logs for today, joining student names
-        const [rawLogsData] = await pool.query(`
-            SELECT l.id as log_id, l.aluno_id, l.url, l.duration, l.categoria as original_category, l.timestamp, s.full_name as student_name
-            FROM logs l LEFT JOIN students s ON l.aluno_id = s.pc_id OR l.aluno_id = s.cpf
-            WHERE DATE(l.timestamp) = CURDATE() ORDER BY l.timestamp DESC`);
-        console.log(`--- Encontrados ${rawLogsData.length} logs brutos.`); // Log
+        // Constrói a query dinamicamente
+        let query = `
+            SELECT l.id as log_id, l.aluno_id, l.url, l.duration, 
+                   l.categoria as original_category, l.timestamp, 
+                   s.full_name as student_name
+            FROM logs l 
+            LEFT JOIN students s ON l.aluno_id = s.pc_id OR l.aluno_id = s.cpf
+        `;
+        
+        const params = [targetDate];
+        
+        // NOVO: Se uma turma foi selecionada, adiciona o filtro
+        if (classId && classId !== 'null') {
+            query += `
+                INNER JOIN class_students cs ON s.id = cs.student_id
+                WHERE cs.class_id = ? AND DATE(l.timestamp) = ?
+            `;
+            params.unshift(classId); // Adiciona classId no início dos parâmetros
+        } else {
+            query += ` WHERE DATE(l.timestamp) = ?`;
+        }
+        
+        query += ` ORDER BY l.timestamp DESC`;
+
+        const [rawLogsData] = await pool.query(query, params);
+        console.log(`--- Encontrados ${rawLogsData.length} logs brutos.`);
 
         // 2. Extract unique hostnames
         const uniqueHostnames = [...new Set(rawLogsData.map(log => extractHostname(log.url)).filter(Boolean))];
