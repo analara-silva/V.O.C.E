@@ -23,7 +23,7 @@ let state = {
     }
 };
 
-const socket = io(); // <--- 1. Inicializa a conexão com o servidor
+const socket = io("http://172.24.128.1:8081"); // <--- 1. Inicializa a conexão com o servidor
 
 socket.on('connect', () => {
     console.log("Conectado ao Socket:", socket.id); // Confirma a conexão

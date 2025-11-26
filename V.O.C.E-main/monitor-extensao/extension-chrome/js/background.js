@@ -6,7 +6,7 @@
 // 🔧 CONFIGURAÇÕES
 // ============================
 
-const BACKEND_URL = 'http://localhost:8081/api/logs';
+const BACKEND_URL = 'http://localhost:8081/api/public/logs';
 const NATIVE_HOST = 'com.meutcc.monitor';
 
 let activeTabs = {};

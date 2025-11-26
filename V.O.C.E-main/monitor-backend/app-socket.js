@@ -47,19 +47,20 @@ app.use(session({
 // ================================================================
 //                       APLICAÇÃO DAS ROTAS
 // ================================================================
-// Primeiro registra a rota pública de logs
-
-// Registra a rota /api/logs (pública) e injeta o 'io'
-app.use('/api', (req, res, next) => {
+// Middleware global — TODAS as rotas terão acesso a req.io
+app.use((req, res, next) => {
     req.io = io;
     next();
-}, publicApiRoutes); 
+});
 
-// Aplica o middleware de autenticação para o restante
+// Rotas públicas
+app.use('/api/public', publicApiRoutes);
+
+// Rotas protegidas
 app.use(['/api', '/dashboard'], requireLogin);
 
-// Registra as rotas protegidas
-app.use('/api', apiRoutes); 
+// Rotas privadas de API
+app.use('/api', apiRoutes);
 
 // Registra as rotas normais
 app.use('/', viewRoutes);  
