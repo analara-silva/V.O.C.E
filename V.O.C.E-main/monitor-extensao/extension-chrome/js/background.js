@@ -86,10 +86,10 @@ async function sendBatch() {
   }
 }
 
-function checkBatchSize() {
+async function checkBatchSize() {
   if (dataBuffer.length >= MAX_BATCH_SIZE) {
     console.log(`⚡ Buffer cheio (${dataBuffer.length}). Enviando agora...`);
-    sendBatch();
+    await sendBatch();
   }
 }
 

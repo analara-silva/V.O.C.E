@@ -73,6 +73,7 @@ router.post('/logs', async (req, res) => {
         });
 
         // EMISSÃO DO SOCKET.IO
+        console.log("api/public/logs: ", io)
         if (io) {
         // Busca os nomes dos alunos para os logs recém-inseridos
         const studentIds = [...new Set(values.map(v => v[0]))];
@@ -85,7 +86,21 @@ router.post('/logs', async (req, res) => {
         if (s.pc_id) studentMap.set(s.pc_id, s.full_name);
         if (s.cpf) studentMap.set(s.cpf, s.full_name);
         });
-    
+        
+        console.log('Enviando dados pro dashboard:', { 
+            count: values.length,
+            categoryCounts,
+            logs: values.map(([aluno_id, url, duration, categoria, timestamp]) => ({ 
+                aluno_id, 
+                url, 
+                duration, 
+                categoria, 
+                timestamp,
+                student_name: studentMap.get(aluno_id) || null
+            })) 
+        });
+
+
         io.emit('logs_updated', { 
             count: values.length,
             categoryCounts,

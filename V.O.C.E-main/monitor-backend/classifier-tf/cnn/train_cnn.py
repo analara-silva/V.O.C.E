@@ -36,10 +36,12 @@ def url_word_tokenizer(url):
         return ' '.join(url_tokens)
     return ' '.join(re.split(r'[\./-]', url))
 
+
 df['word_tokens'] = df['url_cleaned'].apply(url_word_tokenizer)
 texts_words = df['word_tokens'].tolist()
 texts_chars = df['url_cleaned'].tolist()
 labels = df['label'].astype(str).tolist()
+
 
 # --- 2. Tokenização (Palavras e Caracteres) ---
 print("[2/7] Processando texto com tokenizers de palavras e caracteres...")

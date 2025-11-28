@@ -86,7 +86,7 @@ recordtv.r7.com,Streaming
 band.uol.com.br,Streaming
 cultura.uol.com.br,Streaming
 globoplay.globo.com,Streaming
-hbo.com,Streaming,
+hbo.com,Streaming
 hbomax.com,Streaming
 fox.com,Streaming
 espn.com,Streaming
@@ -122,7 +122,7 @@ ustvgo.live,Streaming
 ustvgo.tv,Streaming
 worldstar.hiphop,Streaming
 raiplay.it,Streaming
-aovivo.radiomixfm.com.br, Streaming
+aovivo.radiomixfm.com.br,Streaming
 
 # ===================== Jogos ===================== 
 friv.com,Jogos
@@ -135,12 +135,17 @@ minecraft.net,Jogos
 fortnite.com,Jogos
 store.epicgames.com,Jogos
 playstation.com,Jogos
-store.playstation.com,jogos
+store.playstation.com,Jogos
 itch.io,Jogos
 xbox.com,Jogos
 enigmap.net,Jogos
 ascjogos.org.br,Jogos
 nintendo.com,Jogos
+rachacuca.com.br,Jogos
+my.games,Jogos
+riotgames.com,Jogos
+ea.com,Jogos
+easports.com,Jogos
 
 # ===================== Musica ===================== 
 spotify.com,Musica
@@ -338,9 +343,19 @@ sesisenaispedu-my.sharepoint.com,Produtividade & Ferramentas
 accounts.firefox.com,Produtividade & Ferramentas
 monkeytype.com,Produtividade & Ferramentas
 expressjs.com,Produtividade & Ferramentas
+python.org,Produtividade & Ferramentas
+aws.amazon.com,Produtividade & Ferramentas
+alura.com.br,Produtividade & Ferramentas
+npmjs.com,Produtividade & Ferramentas
+scikit-learn.org,Produtividade & Ferramentas
+pandas.pydata.org,Produtividade & Ferramentas
+notion.com,Produtividade & Ferramentas
+workspace.google.com,Produtividade & Ferramentas
+rescuetime.com,Produtividade & Ferramentas
+pomodorotimer.online,Produtividade & Ferramentas
 
 # ===================== NoticiaISMO =====================
-g1.globo.com, Noticia
+g1.globo.com,Noticia
 uol.com.br,Noticia
 terra.com.br,Noticia
 estadao.com.br,Noticia
@@ -387,6 +402,7 @@ gizbr.uol.com.br,Noticia
 itforum.com.br,Noticia
 infowester.com,Noticia
 tecnoblog.net,Noticia
+fifa.com,Noticia
 
 # ===================== LOJA Digital ===================== 
 

@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../models/db'); // seu db.js
-const { requireLogin } = require('../middlewares/auth'); // se você separou
+const { pool } = require('../models/db'); 
+const { requireLogin } = require('../middlewares/auth');
 const PDFDocument = require('pdfkit');
-const classifier = require('../classifier/python_classifier')
+// Certifique-se de que o classifier e o url-helper existem nesses caminhos na nova versão
+const classifier = require('../classifier/python_classifier'); 
 const { extractHostname } = require('../utils/url-helper');
+const bcrypt = require('bcrypt'); // Necessário para a troca de senha
 
 // ================================================================
 //      APIs PROTEGIDAS DE GESTÃO E DADOS (SQL)
@@ -12,30 +14,21 @@ const { extractHostname } = require('../utils/url-helper');
 
 // --- Override de Categoria ---
 router.post('/override-category', requireLogin, async (req, res) => {
-    console.log("\n--- DEBUG: Recebido POST /api/override-category ---"); // Log de Entrada
     const { url, newCategory } = req.body;
     const professorId = req.session.professorId;
-    console.log("--- DEBUG: Dados Recebidos:", { url, newCategory, professorId }); // Log dos Dados
 
     if (!url || !newCategory || newCategory.trim() === '') {
-        console.log("--- DEBUG: Falha na validação - URL ou Categoria vazia."); // Log de Falha
-        return res.status(400).json({ error: 'URL e nova categoria (não vazia) são obrigatórios.' });
+        return res.status(400).json({ error: 'URL e nova categoria são obrigatórios.' });
     }
 
     let hostname = '';
     try {
-        hostname = extractHostname(url); // Usa a função auxiliar
-        console.log("--- DEBUG: Hostname extraído:", hostname); // Log do Hostname
+        hostname = extractHostname(url);
     } catch(e) {
-         console.error("--- DEBUG: Erro CRÍTICO ao extrair hostname:", e); // Log Erro Extração
-         hostname = url.toLowerCase(); // Fallback
+         hostname = url.toLowerCase();
     }
 
-
-    if (!hostname) {
-         console.log("--- DEBUG: Falha na validação - Hostname resultou em vazio."); // Log Hostname Vazio
-         return res.status(400).json({ error: 'URL inválida ou não processável.' });
-    }
+    if (!hostname) return res.status(400).json({ error: 'URL inválida.' });
 
     try {
         const sql = `
@@ -47,43 +40,31 @@ router.post('/override-category', requireLogin, async (req, res) => {
                 updated_at = NOW();
         `;
         const values = [hostname, newCategory.trim(), professorId];
-        // Loga a query formatada ANTES de executar
-        console.log("--- DEBUG: Executando SQL:", pool.format(sql, values));
-
-        // Executa a query
         const [result] = await pool.query(sql, values);
-        // Loga o resultado da execução do MySQL
-        console.log("--- DEBUG: Resultado da Query MySQL:", result);
 
-        // Verifica se alguma linha foi afetada (inserida ou atualizada)
-        if (result.affectedRows > 0 || result.warningStatus === 0) { // warningStatus 0 pode indicar update sem mudança real
-             console.log("--- DEBUG: Operação no DB bem-sucedida."); // Log Sucesso DB
+        if (result.affectedRows > 0 || result.warningStatus === 0) {
              res.json({ success: true, message: `Categoria para "${hostname}" atualizada para "${newCategory.trim()}".` });
         } else {
-             console.log("--- DEBUG: Query executada, mas nenhuma linha afetada (?).", result); // Log Nenhuma Mudança
-             // Talvez a categoria já fosse a mesma? Ou erro inesperado?
              res.status(500).json({ error: 'Não foi possível confirmar a alteração no banco de dados.' });
         }
-
     } catch (error) {
-        // Loga QUALQUER erro que ocorra durante a execução da query
-        console.error('--- ERRO FATAL ao salvar override de categoria:', error);
+        console.error('Erro ao salvar override de categoria:', error);
         res.status(500).json({ error: 'Erro interno ao salvar a regra de categoria.' });
     }
 });
 
-
 // --- Gestão de Turmas ---
+
+// Criar Turma
 router.post('/classes', requireLogin, async (req, res) => {
     const { name } = req.body;
     if (!name || name.trim() === '') return res.status(400).json({ error: 'Nome da turma é obrigatório.' });
     const owner_id = req.session.professorId;
-    const connection = await pool.getConnection(); // Get connection for transaction
+    const connection = await pool.getConnection(); 
     try {
         await connection.beginTransaction();
         const [classResult] = await connection.query('INSERT INTO classes (name, owner_id) VALUES (?, ?)', [name.trim(), owner_id]);
         const classId = classResult.insertId;
-        // Automatically add the owner as a member
         await connection.query('INSERT INTO class_members (class_id, professor_id) VALUES (?, ?)', [classId, owner_id]);
         await connection.commit();
         res.status(201).json({ success: true, message: 'Turma criada com sucesso!', classId });
@@ -92,10 +73,38 @@ router.post('/classes', requireLogin, async (req, res) => {
         console.error('Erro ao criar turma:', error);
         res.status(500).json({ error: 'Erro interno ao criar turma.' });
     } finally {
-        connection.release(); // Always release connection
+        connection.release(); 
     }
 });
 
+// Editar Turma (ESTA ROTA ESTAVA FALTANDO)
+router.post('/classes/:classId/edit', requireLogin, async (req, res) => {
+    const { classId } = req.params;
+    const { newName } = req.body;
+    const professorId = req.session.professorId;
+
+    if (!newName || newName.trim() === '') {
+        return res.status(400).json({ error: 'O nome da turma não pode ser vazio.' });
+    }
+
+    try {
+        const [rows] = await pool.query('SELECT owner_id FROM classes WHERE id = ?', [classId]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Turma não encontrada.' });
+        
+        if (rows[0].owner_id !== professorId) {
+            return res.status(403).json({ error: 'Apenas o dono pode editar o nome da turma.' });
+        }
+
+        await pool.query('UPDATE classes SET name = ? WHERE id = ?', [newName.trim(), classId]);
+        res.json({ success: true, message: 'Nome da turma atualizado com sucesso!' });
+
+    } catch (error) {
+        console.error('Erro ao editar nome da turma:', error);
+        res.status(500).json({ error: 'Erro interno ao editar a turma.' });
+    }
+});
+
+// Deletar Turma
 router.delete('/classes/:classId', requireLogin, async (req, res) => {
     const { classId } = req.params;
     const professorId = req.session.professorId;
@@ -104,7 +113,6 @@ router.delete('/classes/:classId', requireLogin, async (req, res) => {
         if (rows.length === 0) return res.status(404).json({ error: 'Turma não encontrada.' });
         if (rows[0].owner_id !== professorId) return res.status(403).json({ error: 'Apenas o dono pode remover a turma.' });
 
-        // ON DELETE CASCADE handles related entries in class_members and class_students
         await pool.query('DELETE FROM classes WHERE id = ?', [classId]);
         res.json({ success: true, message: 'Turma removida com sucesso!' });
     } catch (error) {
@@ -113,20 +121,19 @@ router.delete('/classes/:classId', requireLogin, async (req, res) => {
     }
 });
 
+// Compartilhar Turma
 router.post('/classes/:classId/share', requireLogin, async (req, res) => {
     const { classId } = req.params;
-    const { professorId: professorToShareId } = req.body; // Renamed for clarity
+    const { professorId: professorToShareId } = req.body; 
     if (!professorToShareId) return res.status(400).json({ error: 'ID do professor para compartilhar é obrigatório.' });
     try {
         const [rows] = await pool.query('SELECT owner_id FROM classes WHERE id = ?', [classId]);
         if (rows.length === 0) return res.status(404).json({ error: 'Turma não encontrada.' });
         if (rows[0].owner_id !== req.session.professorId) return res.status(403).json({ error: 'Apenas o dono pode compartilhar a turma.' });
 
-        // Check if the professor to share exists
         const [profExists] = await pool.query('SELECT id FROM professors WHERE id = ?', [professorToShareId]);
         if (profExists.length === 0) return res.status(404).json({ error: 'Professor a ser adicionado não encontrado.' });
 
-        // INSERT IGNORE avoids errors if the member already exists
         await pool.query('INSERT IGNORE INTO class_members (class_id, professor_id) VALUES (?, ?)', [classId, professorToShareId]);
         res.json({ success: true, message: 'Turma compartilhada com sucesso!' });
     } catch (error) {
@@ -135,8 +142,9 @@ router.post('/classes/:classId/share', requireLogin, async (req, res) => {
     }
 });
 
+// Remover Membro da Turma
 router.delete('/classes/:classId/remove-member/:professorId', requireLogin, async (req, res) => {
-    const { classId, professorId: memberToRemoveId } = req.params; // Renamed for clarity
+    const { classId, professorId: memberToRemoveId } = req.params; 
     if (!memberToRemoveId) return res.status(400).json({ error: 'ID do professor a remover é obrigatório.' });
     try {
         const [rows] = await pool.query('SELECT owner_id FROM classes WHERE id = ?', [classId]);
@@ -157,10 +165,10 @@ router.delete('/classes/:classId/remove-member/:professorId', requireLogin, asyn
     }
 });
 
+// Listar Membros
 router.get('/classes/:classId/members', requireLogin, async (req, res) => {
     try {
         const { classId } = req.params;
-        // Check if current user is a member first
         const [isMember] = await pool.query('SELECT 1 FROM class_members WHERE class_id = ? AND professor_id = ?', [classId, req.session.professorId]);
         if (isMember.length === 0) return res.status(403).json({ error: 'Você não é membro desta turma.' });
 
@@ -181,6 +189,8 @@ router.get('/classes/:classId/members', requireLogin, async (req, res) => {
 });
 
 // --- Gestão de Alunos ---
+
+// Criar Aluno
 router.post('/students', requireLogin, async (req, res) => {
     const { fullName, cpf, pc_id } = req.body;
     if (!fullName || fullName.trim() === '') return res.status(400).json({ error: 'Nome do aluno é obrigatório.' });
@@ -198,6 +208,34 @@ router.post('/students', requireLogin, async (req, res) => {
     }
 });
 
+// Editar Aluno (ESTA ROTA ESTAVA FALTANDO)
+router.post('/students/:studentId/edit', requireLogin, async (req, res) => {
+    const { studentId } = req.params;
+    const { fullName, cpf, pc_id } = req.body;
+
+    if (!fullName || fullName.trim() === '') {
+        return res.status(400).json({ error: 'Nome do aluno é obrigatório.' });
+    }
+    
+    const cleanCpf = cpf ? cpf.trim() : null;
+    const cleanPcId = pc_id ? pc_id.trim() : null;
+
+    try {
+        await pool.query(
+            'UPDATE students SET full_name = ?, cpf = ?, pc_id = ? WHERE id = ?', 
+            [fullName.trim(), cleanCpf || null, cleanPcId || null, studentId]
+        );
+        res.json({ success: true, message: 'Dados do aluno atualizados com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao editar aluno:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'CPF ou ID do PC já cadastrado em outro aluno.' });
+        }
+        res.status(500).json({ error: 'Erro interno ao editar aluno.' });
+    }
+});
+
+// Listar todos os alunos
 router.get('/students/all', requireLogin, async (req, res) => {
     try {
         const [students] = await pool.query('SELECT * FROM students ORDER BY full_name');
@@ -208,10 +246,10 @@ router.get('/students/all', requireLogin, async (req, res) => {
     }
 });
 
+// Listar alunos da turma
 router.get('/classes/:classId/students', requireLogin, async (req, res) => {
     try {
         const { classId } = req.params;
-        // Check if user is member
         const [isMember] = await pool.query('SELECT 1 FROM class_members WHERE class_id = ? AND professor_id = ?', [classId, req.session.professorId]);
         if (isMember.length === 0) return res.status(403).json({ error: 'Você não tem permissão para ver os alunos desta turma.' });
 
@@ -227,20 +265,18 @@ router.get('/classes/:classId/students', requireLogin, async (req, res) => {
     }
 });
 
+// Adicionar Aluno à Turma
 router.post('/classes/:classId/add-student', requireLogin, async (req, res) => {
     const { classId } = req.params;
     const { studentId } = req.body;
     if (!studentId) return res.status(400).json({ error: 'ID do aluno é obrigatório.' });
     try {
-        // Check if user is member
         const [isMember] = await pool.query('SELECT 1 FROM class_members WHERE class_id = ? AND professor_id = ?', [classId, req.session.professorId]);
         if (isMember.length === 0) return res.status(403).json({ error: 'Você não tem permissão para adicionar alunos a esta turma.' });
 
-        // Check if student exists
          const [studentExists] = await pool.query('SELECT id FROM students WHERE id = ?', [studentId]);
          if (studentExists.length === 0) return res.status(404).json({ error: 'Aluno não encontrado.' });
 
-        // INSERT IGNORE avoids error if student is already in class
         await pool.query('INSERT IGNORE INTO class_students (class_id, student_id) VALUES (?, ?)', [classId, studentId]);
         res.json({ success: true, message: 'Aluno adicionado à turma!' });
     } catch (error) {
@@ -249,10 +285,10 @@ router.post('/classes/:classId/add-student', requireLogin, async (req, res) => {
     }
 });
 
+// Remover Aluno da Turma
 router.delete('/classes/:classId/remove-student/:studentId', requireLogin, async (req, res) => {
     const { classId, studentId } = req.params;
     try {
-         // Check if user is member
         const [isMember] = await pool.query('SELECT 1 FROM class_members WHERE class_id = ? AND professor_id = ?', [classId, req.session.professorId]);
         if (isMember.length === 0) return res.status(403).json({ error: 'Você não tem permissão para remover alunos desta turma.' });
 
@@ -271,7 +307,6 @@ router.delete('/classes/:classId/remove-student/:studentId', requireLogin, async
 // --- Listagem de Professores ---
 router.get('/professors/list', requireLogin, async (req, res) => {
     try {
-        // Exclude the current user from the list
         const [professors] = await pool.query('SELECT id, full_name, username, email FROM professors WHERE id != ? ORDER BY full_name', [req.session.professorId]);
         res.json(professors);
     } catch (error) {
@@ -280,18 +315,43 @@ router.get('/professors/list', requireLogin, async (req, res) => {
     }
 });
 
+// --- Alteração de Senha (ESTA ROTA ESTAVA FALTANDO) ---
+router.post('/change-password', requireLogin, async (req, res) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const professorId = req.session.professorId;
+
+    if (!currentPassword || !newPassword || !confirmPassword) return res.status(400).json({ success: false, message: 'Todos os campos são obrigatórios.' });
+    if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'A nova senha deve ter pelo menos 6 caracteres.' });
+    if (newPassword !== confirmPassword) return res.status(400).json({ success: false, message: 'A nova senha e a confirmação não coincidem.' });
+    if (newPassword === currentPassword) return res.status(400).json({ success: false, message: 'A nova senha não pode ser igual à senha atual.' });
+
+    try {
+        const [rows] = await pool.query('SELECT password_hash FROM professors WHERE id = ?', [professorId]);
+        if (rows.length === 0) return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+
+        const currentHashedPassword = rows[0].password_hash;
+        const isMatch = await bcrypt.compare(currentPassword, currentHashedPassword);
+
+        if (!isMatch) return res.status(401).json({ success: false, message: 'A senha atual está incorreta.' });
+
+        const newHashedPassword = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE professors SET password_hash = ? WHERE id = ?', [newHashedPassword, professorId]);
+
+        res.json({ success: true, message: 'Senha alterada com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao alterar senha:', error);
+        res.status(500).json({ success: false, message: 'Erro interno no servidor ao tentar alterar a senha.' });
+    }
+});
+
 // --- Dados para Dashboard e Alertas ---
 
 router.get('/data', requireLogin, async (req, res) => {
-    console.log("--- Iniciando GET /api/data ---");
     try {
-        const professorId = req.session.professorId;
         const targetDate = req.query.date || new Date().toISOString().split('T')[0];
-        const classId = req.query.classId; // NOVO: Pega o ID da turma
+        const classId = req.query.classId; 
         
-        console.log(`--- Buscando logs para a data: ${targetDate}, turma: ${classId || 'todas'}`);
-
-        // Constrói a query dinamicamente
+        // 1. Query de Logs (Detalhada)
         let query = `
             SELECT l.id as log_id, l.aluno_id, l.url, l.duration, 
                    l.categoria as original_category, l.timestamp, 
@@ -302,98 +362,78 @@ router.get('/data', requireLogin, async (req, res) => {
         
         const params = [targetDate];
         
-        // NOVO: Se uma turma foi selecionada, adiciona o filtro
         if (classId && classId !== 'null') {
-            query += `
-                INNER JOIN class_students cs ON s.id = cs.student_id
-                WHERE cs.class_id = ? AND DATE(l.timestamp) = ?
-            `;
-            params.unshift(classId); // Adiciona classId no início dos parâmetros
+            query += ` INNER JOIN class_students cs ON s.id = cs.student_id WHERE cs.class_id = ? AND DATE(l.timestamp) = ?`;
+            params.unshift(classId); 
         } else {
             query += ` WHERE DATE(l.timestamp) = ?`;
         }
-        
         query += ` ORDER BY l.timestamp DESC`;
 
         const [rawLogsData] = await pool.query(query, params);
-        console.log(`--- Encontrados ${rawLogsData.length} logs brutos.`);
 
-        // 2. Extract unique hostnames
+        // 2. Processar Overrides e Categorias
         const uniqueHostnames = [...new Set(rawLogsData.map(log => extractHostname(log.url)).filter(Boolean))];
-        console.log("--- Hostnames únicos:", uniqueHostnames); // Log
-
-        // 3. Fetch overrides for these hostnames
         let overrideMap = {};
         if (uniqueHostnames.length > 0) {
-            const [overrideRows] = await pool.query(
-                'SELECT hostname, category FROM category_overrides WHERE hostname IN (?)',
-                [uniqueHostnames]
-            );
-            overrideMap = overrideRows.reduce((map, row) => {
-                map[row.hostname] = row.category;
-                return map;
-            }, {});
-            console.log("--- Overrides encontrados:", overrideMap); // Log
+            const [overrideRows] = await pool.query('SELECT hostname, category FROM category_overrides WHERE hostname IN (?)', [uniqueHostnames]);
+            overrideMap = overrideRows.reduce((map, row) => { map[row.hostname] = row.category; return map; }, {});
         }
 
-        // 4. Apply overrides to create finalLogs
         const finalLogs = rawLogsData.map(log => {
             const hostname = extractHostname(log.url);
             const overriddenCategory = overrideMap[hostname];
-            // *** APLICA O OVERRIDE AQUI ***
             const finalCategory = overriddenCategory !== undefined ? overriddenCategory : (log.original_category || 'Não Categorizado');
-            return {
-                id: log.log_id,
-                aluno_id: log.aluno_id,
-                url: log.url,
-                duration: log.duration,
-                categoria: finalCategory, // Usa a categoria final
-                timestamp: log.timestamp,
-                student_name: log.student_name
-            };
+            return { ...log, categoria: finalCategory };
         });
-        console.log(`--- ${finalLogs.length} logs finais processados (com overrides).`); // Log
 
-        // --- Summary Calculation (unchanged - uses original log categories for simplicity) ---
-        // Manter a query original do summary por simplicidade no TCC.
-        // Se precisar que o summary reflita overrides, a query fica bem mais complexa.
-        const [summary] = await pool.query(`
-            SELECT s.full_name as student_name, COALESCE(s.pc_id, s.cpf) as aluno_id, COALESCE(SUM(CASE WHEN DATE(l.timestamp) = CURDATE() THEN l.duration ELSE 0 END), 0) as total_duration, COALESCE(SUM(CASE WHEN DATE(l.timestamp) = CURDATE() THEN 1 ELSE 0 END), 0) as log_count, MAX(CASE WHEN DATE(l.timestamp) = CURDATE() THEN l.timestamp ELSE NULL END) as last_activity
-             FROM students s LEFT JOIN logs l ON s.pc_id = l.aluno_id OR s.cpf = l.aluno_id
-             GROUP BY s.id, s.full_name, s.pc_id, s.cpf
-             ORDER BY MAX(CASE WHEN DATE(l.timestamp) = CURDATE() THEN l.timestamp ELSE NULL END) IS NULL ASC, MAX(CASE WHEN DATE(l.timestamp) = CURDATE() THEN l.timestamp ELSE NULL END) DESC, s.full_name ASC
-        `);
+        // 3. Calcular Alertas (COM NORMALIZAÇÃO DE ID)
+        const redAlerts = new Set();
+        const blueAlerts = new Set();
 
-        // --- CORREÇÃO: Alert Calculation BASED ON finalLogs (with overrides) ---
-        const finalRedAlertStudents = new Set();
-        const finalBlueAlertStudents = new Set();
-        finalLogs.forEach(log => { // Itera sobre os logs JÁ COM overrides
+        finalLogs.forEach(log => {
+            if (!log.aluno_id) return;
+            const normalizedId = String(log.aluno_id).trim().toLowerCase(); // Normaliza para evitar erro
+            
             if (['Rede Social', 'Streaming & Jogos'].includes(log.categoria)) {
-                finalRedAlertStudents.add(log.aluno_id);
+                redAlerts.add(normalizedId);
             }
             if (log.categoria === 'IA') {
-                finalBlueAlertStudents.add(log.aluno_id);
+                blueAlerts.add(normalizedId);
             }
         });
-        console.log("--- Alertas recalculados com overrides:", { red: finalRedAlertStudents.size, blue: finalBlueAlertStudents.size }); // Log
 
-        // Add CORRECTED alert flags to the summary
-        const finalSummaryWithCorrectAlerts = summary.map(s => ({
-            ...s,
-            has_red_alert: finalRedAlertStudents.has(s.aluno_id), // Usa os sets recalculados
-            has_blue_alert: finalBlueAlertStudents.has(s.aluno_id) // Usa os sets recalculados
-        }));
-        // --- Fim da Correção dos Alertas ---
+        // 4. Query de Resumo (Summary)
+        const [summary] = await pool.query(`
+            SELECT s.full_name as student_name, COALESCE(s.pc_id, s.cpf) as aluno_id, 
+                   COALESCE(SUM(CASE WHEN DATE(l.timestamp) = ? THEN l.duration ELSE 0 END), 0) as total_duration, 
+                   COALESCE(SUM(CASE WHEN DATE(l.timestamp) = ? THEN 1 ELSE 0 END), 0) as log_count, 
+                   MAX(CASE WHEN DATE(l.timestamp) = ? THEN l.timestamp ELSE NULL END) as last_activity
+             FROM students s 
+             LEFT JOIN logs l ON (s.pc_id = l.aluno_id OR s.cpf = l.aluno_id) AND DATE(l.timestamp) = ?
+             GROUP BY s.id, s.full_name, s.pc_id, s.cpf
+             ORDER BY MAX(CASE WHEN DATE(l.timestamp) = ? THEN l.timestamp ELSE NULL END) IS NULL ASC, 
+                      MAX(CASE WHEN DATE(l.timestamp) = ? THEN l.timestamp ELSE NULL END) DESC, s.full_name ASC
+        `, [targetDate, targetDate, targetDate, targetDate, targetDate, targetDate]);
 
-        console.log("--- Enviando resposta final."); // Log
-        // 5. Send the logs WITH overrides applied AND summary with CORRECTED alerts
-        res.json({ logs: finalLogs, summary: finalSummaryWithCorrectAlerts });
+        // 5. Unir Alertas ao Resumo
+        const finalSummary = summary.map(s => {
+            const id = s.aluno_id ? String(s.aluno_id).trim().toLowerCase() : '';
+            return {
+                ...s,
+                has_red_alert: redAlerts.has(id),
+                has_blue_alert: blueAlerts.has(id)
+            };
+        });
+
+        res.json({ logs: finalLogs, summary: finalSummary });
 
     } catch (err) {
         console.error('ERRO na rota /api/data:', err);
         res.status(500).json({ error: 'Erro interno ao buscar dados.' });
     }
 });
+
 router.get('/alerts/:alunoId/:type', requireLogin, async (req, res) => {
     const alunoId = decodeURIComponent(req.params.alunoId);
     const { type } = req.params;
@@ -403,7 +443,6 @@ router.get('/alerts/:alunoId/:type', requireLogin, async (req, res) => {
     else return res.status(400).json({ error: 'Tipo de alerta inválido.' });
 
     try {
-        // Fetch logs matching the criteria
         const [logs] = await pool.query(
             'SELECT * FROM logs WHERE aluno_id = ? AND categoria IN (?) ORDER BY timestamp DESC',
             [alunoId, categories]
@@ -418,7 +457,6 @@ router.get('/alerts/:alunoId/:type', requireLogin, async (req, res) => {
 // --- Relatório em PDF ---
 router.get('/download-report/:date', requireLogin, async (req, res) => {
     try {
-        // Fetch student names for mapping
         const [students] = await pool.query('SELECT full_name, cpf, pc_id FROM students');
         const studentNameMap = new Map();
         students.forEach(s => {
@@ -426,20 +464,19 @@ router.get('/download-report/:date', requireLogin, async (req, res) => {
             if (s.cpf) studentNameMap.set(s.cpf, s.full_name);
         });
 
-        const dateStr = req.params.date; // Format YYYY-MM-DD
-        const requestedDate = new Date(dateStr + 'T00:00:00'); // Use local time start for date comparison
+        const dateStr = req.params.date; 
+        const requestedDate = new Date(dateStr + 'T00:00:00'); 
         if (isNaN(requestedDate.getTime())) return res.status(400).send('Formato de data inválido. Use AAAA-MM-DD.');
 
         const today = new Date();
-        today.setHours(0,0,0,0); // Start of today local time
-        const requestedDateOnly = new Date(requestedDate); // Clone for comparison
+        today.setHours(0,0,0,0);
+        const requestedDateOnly = new Date(requestedDate);
 
         let aggregatedData = {};
         let dataSource = '';
         let foundData = false;
 
         if (requestedDateOnly.getTime() === today.getTime()) {
-            // Fetch and aggregate logs for TODAY from 'logs' table
             dataSource = 'Logs do Dia (em tempo real)';
             const [logsResult] = await pool.query(
                 `SELECT aluno_id, url, SUM(duration) as total_duration, COUNT(*) as count
@@ -453,20 +490,15 @@ router.get('/download-report/:date', requireLogin, async (req, res) => {
                  });
             }
         } else {
-            // Fetch aggregated logs for PAST days from 'old_logs' table
             dataSource = 'Logs Arquivados';
             const [rows] = await pool.query('SELECT aluno_id, daily_logs FROM old_logs WHERE archive_date = ?', [dateStr]);
             if (rows.length > 0) {
                 foundData = true;
                 rows.forEach(row => {
                     try {
-                        // Assuming daily_logs is stored as JSON type in MySQL
                         aggregatedData[row.aluno_id] = row.daily_logs;
-                        // If stored as TEXT, uncomment below:
-                        // aggregatedData[row.aluno_id] = JSON.parse(row.daily_logs);
                     } catch (parseError) {
-                         console.error(`Erro ao parsear JSON de old_logs para aluno ${row.aluno_id} na data ${dateStr}:`, parseError);
-                         // Handle error, maybe skip this entry or log it
+                         console.error(`Erro ao parsear JSON de old_logs:`, parseError);
                     }
                 });
             }
@@ -474,7 +506,6 @@ router.get('/download-report/:date', requireLogin, async (req, res) => {
 
         if (!foundData) return res.status(404).send('Nenhum log encontrado para esta data.');
 
-        // --- PDF Generation ---
         const doc = new PDFDocument({ margin: 50 });
         const filename = `relatorio-logs-${dateStr}.pdf`;
         res.setHeader('Content-disposition', `attachment; filename="${filename}"`);

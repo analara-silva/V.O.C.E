@@ -287,8 +287,6 @@ CREATE TABLE IF NOT EXISTS `professors` (
   `email` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `password_hash` varchar(255) COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Senha criptografada com bcrypt',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `aceitou_politica` tinyint(1) DEFAULT '0',
-  `data_aceite` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)

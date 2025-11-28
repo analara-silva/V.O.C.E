@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         .pagination-btn {
             padding: 0.25rem 0.75rem;
@@ -165,7 +167,7 @@
     
     <%- include('partials/modals') %>
     
-    <script src="/socket.io/socket.io.js"></script>
+
     <script src="/js/script.js"></script>
 
     <div id="categoryEditModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-50">

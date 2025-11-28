@@ -12,7 +12,7 @@ const { requireLogin } = require('./middlewares/auth.js')
 // Módulos de Rotas (ADICIONADO RECENTEMENTE)
 const apiRoutes = require('./routes/api.js');
 const publicApiRoutes = require('./routes/public_api.js')
-const viewRoutes = require('./routes/views.js'); 
+const viewRoutes = require('./routes/views.js');
 
 const app = express();
 const http = require('http');
@@ -63,7 +63,7 @@ app.use(['/api', '/dashboard'], requireLogin);
 app.use('/api', apiRoutes);
 
 // Registra as rotas normais
-app.use('/', viewRoutes);  
+app.use('/', viewRoutes);
 // ================================================================
 //                       TRATAMENTO DE ERROS E INICIALIZAÇÃO
 // ================================================================
@@ -88,7 +88,7 @@ app.set('socketio', io);  // OBRIGATÓRIO
 io.on('connection', (socket) => {
     console.log("🔥 Socket conectado!", socket.id);
 });
- 
+
 server.listen(port, '0.0.0.0', () => {
     console.log(`Servidor rodando em http://${getLocalIP()}:${port}`);
 });
@@ -97,9 +97,9 @@ function getLocalIP() {
     const os = require('os');
     const interfaces = os.networkInterfaces();
     for (let iface in interfaces) {
-      for (let i of interfaces[iface]) {
-        if (i.family === 'IPv4' && !i.internal) return i.address;
-      }
+        for (let i of interfaces[iface]) {
+            if (i.family === 'IPv4' && !i.internal) return i.address;
+        }
     }
     return 'localhost';
-  }
+}
