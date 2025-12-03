@@ -8,20 +8,12 @@ const simpleClassifier = require('./simple_classifier.js');
 
 const classifier = {
   categorizar: async function(domain) {
-
-    // Verificação de IP local
-    if(/^(localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1]))/.test(domain)){
-      return 'Produtividade & Ferramentas';
-    }
-
-    // Fallback simples
     const simpleResult = await simpleClassifier.categorizar(domain);
     if (simpleResult !== 'Outros') {
       console.log(`[Classificador Simples] Sucesso: ${domain} -> ${simpleResult}`);
       return simpleResult;
     }
-    
-    // IA Python
+
     console.log(`[IA Python] Acionando IA (Modelo Final Híbrido) para '${domain}'...`);
     
     return new Promise((resolve) => {

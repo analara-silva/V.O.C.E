@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= pageTitle %></title>
-    <link rel="shortcut icon" href="#" type="image/png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+        <link rel="manifest" href="icons/site.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -169,4 +172,22 @@
     
 
     <script src="/js/script.js"></script>
+
+    <div id="categoryEditModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Alterar Categoria para:</h3>
+                <button id="closeCategoryModalBtn" class="text-gray-400 hover:text-gray-600 modal-close-btn">&times;</button>
+            </div>
+            <p id="modalUrlDisplay" class="text-sm font-mono text-gray-700 mb-4 break-all"></p>
+    
+            <div id="modalCategoryList" class="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2">
+                </div>
+    
+            <div class="flex justify-end gap-4 pt-4 border-t">
+                <button id="cancelCategoryChangeBtn" type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 modal-close-btn">Cancelar</button>
+                <button id="confirmCategoryChangeBtn" type="button" class="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800">Confirmar</button>
+            </div>
+        </div>
+    </div>
 </body>

@@ -224,6 +224,11 @@ window.openCategoryModal = function(url, currentCategory) {
     modal.classList.remove('hidden');
 }
 
+window.closeCategoryModal = function() {
+    document.getElementById('categoryEditModal')?.classList.add('hidden');
+    currentlyEditingUrl = null;
+}
+
 // Tour
 let currentTourStep = 1;
 const totalTourSteps = 3;
@@ -732,7 +737,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const span = e.target.closest('.category-trigger');
             if(span) openCategoryModal(span.dataset.url, span.dataset.cat);
         });
-        
+        document.getElementById('confirmCategoryChangeBtn')?.addEventListener('click', async () => {
+            const radio = document.querySelector('input[name="modalCategoryOption"]:checked');
+            if(!radio) return;
+            try {
+                await apiCall('/api/override-category', 'POST', { url: currentlyEditingUrl, newCategory: radio.value });
+                Swal.fire('Salvo', 'Categoria atualizada', 'success');
+                await fetchDataPanels();
+                closeCategoryModal();
+            } catch(e) { Swal.fire('Erro', e.message, 'error'); }
+        });
         document.getElementById('clear-filters-btn')?.addEventListener('click', () => {
             document.getElementById('search-input').value = '';
             state.currentFilters.search = '';
