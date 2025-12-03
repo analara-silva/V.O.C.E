@@ -1,7 +1,7 @@
 # V.O.C.E - Visualização e Observação do Comportamento Estudantil
 
 ![Versão](https://img.shields.io/badge/version-1.1-blue)
-![Status](https://img.shields.io/badge/status-estável-green)
+![Status](https://img.shields.io/badge/status-desenvolvimento-green)
 ![Licença](https://img.shields.io/badge/license-ISC-blue)
 
 ---

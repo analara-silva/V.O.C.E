@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 import subprocess
 
-user_home = Path.home()
-base_path = user_home / "Downloads" / "V.O.C.E"
+user_host = Path(__file__).parent
+base_path = user_host.parent
 user_path = base_path / "native_host" / "run_host.bat"
 
 chrome_path = base_path / "host_manifest" / "host_manifest-chrome.json"

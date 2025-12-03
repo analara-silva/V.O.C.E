@@ -3,6 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const { pool } = require('../models/db');
 const { requireLogin} = require('../middlewares/auth'); // Importa middleware
+const crypto = require('crypto');
+const sendMail = require('../utils/mailer');
 
 
 // ================================================================
@@ -12,7 +14,8 @@ const { requireLogin} = require('../middlewares/auth'); // Importa middleware
 router.get('/', (req, res) => {
     res.render('landpage', {
         pageTitle: 'V.O.C.E - Monitorização Inteligente',
-        isLoggedIn: !!req.session.uid
+        // CORREÇÃO: Verifica professorId em vez de uid
+        isLoggedIn: !!req.session.professorId 
     });
 });
 
@@ -93,7 +96,150 @@ router.get('/termos', (req, res) => {res.render('termos-de-uso', { pageTitle: 'V
 
 router.get('/politicas', (req, res) => {res.render('politicas-de-privacidade', { pageTitle: 'V.O.C.E | Politícas de Privacidade' });});
 
+router.post('/esqueci-senha', async (req, res) => {
+    const { email } = req.body;
+    try {
+        // Verifica se o usuário existe
+        const [users] = await pool.query('SELECT id FROM professors WHERE email = ?', [email]);
+        
+        if (users.length === 0) {
+            // Mensagem genérica por segurança
+            return res.render('esqueci-senha', { 
+                pageTitle: 'Recuperar Senha', 
+                message: 'Se este e-mail estiver cadastrado, você receberá um link de recuperação.', 
+                error: null 
+            });
+        }
 
+        const user = users[0];
+        const token = crypto.randomBytes(20).toString('hex');
+        const now = new Date();
+        now.setHours(now.getHours() + 1); // Expira em 1 hora
+
+        // Salva token no banco
+        await pool.query('UPDATE professors SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?', [token, now, user.id]);
+
+        // Link de recuperação
+        const resetUrl = `http://${req.headers.host}/reset-password?token=${token}`;
+
+        const htmlEmail = `
+            <h3>Recuperação de Senha - V.O.C.E</h3>
+            <p>Você solicitou a redefinição de sua senha.</p>
+            <p>Clique no link abaixo para criar uma nova senha:</p>
+            <a href="${resetUrl}" style="background-color: #DC2626; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display:inline-block; margin: 10px 0;">Redefinir Senha</a>
+            <p>Este link é válido por 1 hora.</p>
+            <p><small>Se você não solicitou isso, ignore este e-mail.</small></p>
+        `;
+
+        await sendMail(email, 'V.O.C.E - Recuperação de Senha', htmlEmail);
+
+        res.render('esqueci-senha', { 
+            pageTitle: 'Recuperar Senha', 
+            message: 'E-mail enviado! Verifique sua caixa de entrada (e spam).', 
+            error: null 
+        });
+
+    } catch (error) {
+        console.error('Erro no esqueci-senha:', error);
+        res.render('esqueci-senha', { 
+            pageTitle: 'Recuperar Senha', 
+            message: null, 
+            error: 'Erro interno ao tentar enviar o e-mail. Tente novamente mais tarde.' 
+        });
+    }
+});
+
+// 2. Processar a solicitação e enviar e-mail
+router.post('/esqueci-senha', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const token = crypto.randomBytes(20).toString('hex');
+        const now = new Date();
+        now.setHours(now.getHours() + 1); // Token expira em 1 hora
+
+        // Verificar se o usuário existe
+        const [users] = await pool.query('SELECT id FROM professors WHERE email = ?', [email]);
+        if (users.length === 0) {
+            // Por segurança, não informamos se o email não existe, ou damos uma msg genérica
+            return res.render('esqueci-senha', { pageTitle: 'Recuperar Senha', message: 'Se este e-mail estiver cadastrado, você receberá um link de recuperação.', error: null });
+        }
+
+        const user = users[0];
+
+        // Salvar token e expiração no banco
+        await pool.query('UPDATE professors SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?', [token, now, user.id]);
+
+        // Criar link de recuperação
+        // Nota: Ajuste o protocolo (http/https) e host conforme necessário para produção
+        const resetUrl = `http://${req.headers.host}/reset-password?token=${token}`;
+
+        const htmlEmail = `
+            <h3>Recuperação de Senha - V.O.C.E</h3>
+            <p>Você solicitou a redefinição de sua senha.</p>
+            <p>Clique no link abaixo para criar uma nova senha:</p>
+            <a href="${resetUrl}" style="background-color: #DC2626; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Redefinir Senha</a>
+            <p>Este link expira em 1 hora.</p>
+            <p>Se você não solicitou isso, ignore este e-mail.</p>
+        `;
+
+        await sendMail(email, 'V.O.C.E - Recuperação de Senha', htmlEmail);
+
+        res.render('esqueci-senha', { pageTitle: 'Recuperar Senha', message: 'E-mail enviado! Verifique sua caixa de entrada.', error: null });
+
+    } catch (error) {
+        console.error('Erro no esqueci-senha:', error);
+        res.render('esqueci-senha', { pageTitle: 'Recuperar Senha', message: null, error: 'Erro ao processar solicitação.' });
+    }
+});
+
+// 3. Página de Reset (vinda do link do e-mail)
+router.get('/reset-password', async (req, res) => {
+    const { token } = req.query;
+    try {
+        const [users] = await pool.query('SELECT id FROM professors WHERE reset_password_token = ? AND reset_password_expires > NOW()', [token]);
+        
+        if (users.length === 0) {
+            return res.render('login', { pageTitle: 'Login', message: null, error: 'Token de recuperação inválido ou expirado.' });
+        }
+
+        res.render('reset-password', { pageTitle: 'Nova Senha', token: token, error: null });
+    } catch (error) {
+        console.error('Erro ao verificar token:', error);
+        res.redirect('/login');
+    }
+});
+
+// 4. Salvar a nova senha
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    if (newPassword !== confirmPassword) {
+        return res.render('reset-password', { pageTitle: 'Nova Senha', token, error: 'As senhas não coincidem.' });
+    }
+    
+    if (newPassword.length < 6) {
+        return res.render('reset-password', { pageTitle: 'Nova Senha', token, error: 'A senha deve ter no mínimo 6 caracteres.' });
+    }
+
+    try {
+        const [users] = await pool.query('SELECT id FROM professors WHERE reset_password_token = ? AND reset_password_expires > NOW()', [token]);
+
+        if (users.length === 0) {
+            return res.render('login', { pageTitle: 'Login', message: null, error: 'Token inválido ou expirado.' });
+        }
+
+        const user = users[0];
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await pool.query('UPDATE professors SET password_hash = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?', [hashedPassword, user.id]);
+
+        res.render('login', { pageTitle: 'Login', message: 'Senha alterada com sucesso! Faça login.', error: null });
+
+    } catch (error) {
+        console.error('Erro ao resetar senha:', error);
+        res.render('reset-password', { pageTitle: 'Nova Senha', token, error: 'Erro interno ao resetar senha.' });
+    }
+});
 // ================================================================
 //      ROTAS DE PÁGINAS PROTEGIDAS (RENDERIZAÇÃO EJS COM DADOS SQL)
 // ================================================================

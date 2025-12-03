@@ -169,3 +169,6 @@ training_history.png
 # Backups
 *.bak
 *.backup
+host_manifest-chrome.json
+host_manifest-firefox.json
+instalado_host.reg

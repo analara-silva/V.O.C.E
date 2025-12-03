@@ -454,9 +454,17 @@ router.get('/alerts/:alunoId/:type', requireLogin, async (req, res) => {
     }
 });
 
-// --- Relatório em PDF ---
+// ================================================================
+//      RELATÓRIO PDF (CONTRASTE INTELIGENTE)
+// ================================================================
+
 router.get('/download-report/:date', requireLogin, async (req, res) => {
     try {
+        const dateStr = req.params.date; 
+        const requestedDate = new Date(dateStr + 'T00:00:00'); 
+        if (isNaN(requestedDate.getTime())) return res.status(400).send('Data inválida.');
+
+        // 1. Busca Dados
         const [students] = await pool.query('SELECT full_name, cpf, pc_id FROM students');
         const studentNameMap = new Map();
         students.forEach(s => {
@@ -464,82 +472,190 @@ router.get('/download-report/:date', requireLogin, async (req, res) => {
             if (s.cpf) studentNameMap.set(s.cpf, s.full_name);
         });
 
-        const dateStr = req.params.date; 
-        const requestedDate = new Date(dateStr + 'T00:00:00'); 
-        if (isNaN(requestedDate.getTime())) return res.status(400).send('Formato de data inválido. Use AAAA-MM-DD.');
+        // 2. Configurações
+        const IMPROPER_CATEGORIES = ['Rede Social', 'Streaming', 'Jogos', 'Streaming & Jogos', 'Loja Digital', 'Anime', 'Musica', 'Outros'];
+        const colors = { 
+            primary: '#B91C1C',    danger: '#DC2626',     success: '#16A34A', 
+            secondary: '#1F2937',  accent: '#F3F4F6',     text: '#374151', muted: '#9CA3AF'
+        };
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
+        // 3. Coleta de Dados
+        const today = new Date(); today.setHours(0,0,0,0);
         const requestedDateOnly = new Date(requestedDate);
-
         let aggregatedData = {};
         let dataSource = '';
         let foundData = false;
 
         if (requestedDateOnly.getTime() === today.getTime()) {
-            dataSource = 'Logs do Dia (em tempo real)';
+            dataSource = 'Monitoramento em Tempo Real';
             const [logsResult] = await pool.query(
-                `SELECT aluno_id, url, SUM(duration) as total_duration, COUNT(*) as count
-                 FROM logs WHERE DATE(timestamp) = CURDATE() GROUP BY aluno_id, url`
-            );
+                `SELECT aluno_id, url, categoria, SUM(duration) as total_duration, COUNT(*) as count
+                 FROM logs WHERE DATE(timestamp) = ? GROUP BY aluno_id, url, categoria`, [dateStr]);
             if (logsResult.length > 0) {
                  foundData = true;
                  logsResult.forEach(row => {
                     if (!aggregatedData[row.aluno_id]) aggregatedData[row.aluno_id] = {};
-                    aggregatedData[row.aluno_id][row.url] = { total_duration: row.total_duration, count: row.count };
+                    aggregatedData[row.aluno_id][row.url] = { total_duration: row.total_duration, count: row.count, category: row.categoria };
                  });
             }
         } else {
-            dataSource = 'Logs Arquivados';
+            dataSource = 'Histórico Arquivado';
             const [rows] = await pool.query('SELECT aluno_id, daily_logs FROM old_logs WHERE archive_date = ?', [dateStr]);
             if (rows.length > 0) {
                 foundData = true;
                 rows.forEach(row => {
-                    try {
-                        aggregatedData[row.aluno_id] = row.daily_logs;
-                    } catch (parseError) {
-                         console.error(`Erro ao parsear JSON de old_logs:`, parseError);
-                    }
+                    try { aggregatedData[row.aluno_id] = typeof row.daily_logs === 'string' ? JSON.parse(row.daily_logs) : row.daily_logs; } catch (e) {}
                 });
             }
         }
 
-        if (!foundData) return res.status(404).send('Nenhum log encontrado para esta data.');
+        if (!foundData) return res.status(404).send(`Nenhum dado encontrado para ${dateStr}.`);
 
-        const doc = new PDFDocument({ margin: 50 });
-        const filename = `relatorio-logs-${dateStr}.pdf`;
+        // --- GERAÇÃO DO PDF ---
+        const PDFDocument = require('pdfkit'); // Garantindo require
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+        const filename = `Relatorio_VOCE_${dateStr}.pdf`;
         res.setHeader('Content-disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-type', 'application/pdf');
         doc.pipe(res);
 
-        doc.fontSize(18).text('Relatório de Atividade de Alunos', { align: 'center' });
-        doc.fontSize(12).text(`Data: ${requestedDate.toLocaleDateString('pt-BR')} | Fonte: ${dataSource}`, { align: 'center' });
-        doc.moveDown(2);
+        const drawHeader = () => {
+            doc.rect(0, 0, 595.28, 80).fill(colors.primary);
+            doc.fillColor('#FFFFFF').fontSize(24).font('Helvetica-Bold').text('Relatório de Monitoramento', 40, 25);
+            doc.fontSize(10).font('Helvetica').text(`Gerado via V.O.C.E | ${dataSource}`, 40, 55);
+            doc.fontSize(14).text(requestedDate.toLocaleDateString('pt-BR'), 450, 25, { align: 'right' });
+            doc.moveDown(4);
+        };
+        const formatMinutes = (s) => `${(s/60).toFixed(1)} min`;
 
+        drawHeader();
+
+        // --- Resumo Geral ---
+        let totalStudents = Object.keys(aggregatedData).length;
+        let grandTotalTime = 0, grandImproperTime = 0;
+        let topSiteOverall = { url: '-', duration: 0 };
+        let siteMapGlobal = {};
+
+        for (const uid in aggregatedData) {
+            for (const url in aggregatedData[uid]) {
+                const item = aggregatedData[uid][url];
+                grandTotalTime += item.total_duration;
+                if (IMPROPER_CATEGORIES.includes(item.category)) grandImproperTime += item.total_duration;
+                siteMapGlobal[url] = (siteMapGlobal[url] || 0) + item.total_duration;
+                if (siteMapGlobal[url] > topSiteOverall.duration) topSiteOverall = { url: url, duration: siteMapGlobal[url] };
+            }
+        }
+
+        doc.fillColor(colors.secondary).fontSize(16).font('Helvetica-Bold').text('Resumo da Turma');
+        doc.moveDown(0.5);
+        const summaryY = doc.y;
+        
+        const drawCard = (x, title, value, valColor=colors.primary, note='') => {
+            doc.roundedRect(x, summaryY, 120, 60, 5).fill(colors.accent);
+            if(note) doc.roundedRect(x, summaryY, 120, 60, 5).fill('#FEF2F2');
+            doc.fillColor(valColor).fontSize(16).text(value, x+10, summaryY+15, {width: 100, align:'center'});
+            doc.fillColor(colors.text).fontSize(8).font('Helvetica').text(title, x+10, summaryY+40, {width: 100, align:'center'});
+        };
+
+        drawCard(40, 'Alunos Ativos', totalStudents);
+        drawCard(170, 'Tempo Total', formatMinutes(grandTotalTime), colors.secondary);
+        drawCard(300, 'Tempo em Distração', formatMinutes(grandImproperTime), colors.danger, true);
+        drawCard(430, 'Site Mais Acessado', topSiteOverall.url.substring(0,18), colors.secondary);
+
+        doc.moveDown(5);
+
+        // --- Detalhes por Aluno ---
         for (const alunoId in aggregatedData) {
-            const displayName = studentNameMap.get(alunoId) || alunoId;
-            const dailyLogs = aggregatedData[alunoId];
-            doc.fontSize(14).font('Helvetica-Bold').text(`Aluno: ${displayName}`);
+            const displayName = studentNameMap.get(alunoId) || `ID: ${alunoId}`;
+            const userLogs = aggregatedData[alunoId];
+            
+            if (doc.y > 650) { doc.addPage(); drawHeader(); }
+
+            doc.rect(40, doc.y, 515, 25).fill('#E5E7EB');
+            doc.fillColor(colors.secondary).fontSize(12).font('Helvetica-Bold').text(displayName, 50, doc.y - 18);
             doc.moveDown(0.5);
 
-            if (dailyLogs && typeof dailyLogs === 'object' && Object.keys(dailyLogs).length > 0) {
-                 for (const url in dailyLogs) {
-                    const details = dailyLogs[url];
-                    const duration = details.total_duration || 0;
-                    const count = details.count || 0;
-                    const durationMinutes = (duration / 60).toFixed(1);
-                    doc.fontSize(10).font('Helvetica').text(`  - URL: ${url} | Duração: ${durationMinutes} min | Acessos: ${count}`);
+            const sortedSites = Object.entries(userLogs).map(([url, data]) => ({ url, ...data })).sort((a, b) => b.total_duration - a.total_duration);
+            const top5 = sortedSites.slice(0, 5);
+            const maxDuration = top5.length > 0 ? top5[0].total_duration : 1;
+
+            const startY = doc.y;
+            doc.fontSize(9).font('Helvetica-Bold').fillColor(colors.text).text('Top 5 Sites (Visual)', 40, startY);
+            
+            // --- GRÁFICO INTELIGENTE ---
+            let currentBarY = startY + 15;
+            const chartWidth = 200;
+            const barHeight = 15;
+
+            top5.forEach((site) => {
+                const barW = (site.total_duration / maxDuration) * chartWidth;
+                const isImproper = IMPROPER_CATEGORIES.includes(site.category);
+                const barColor = isImproper ? colors.danger : colors.secondary;
+                
+                // Fundo da barra
+                doc.rect(40, currentBarY, chartWidth, barHeight).fill('#F3F4F6');
+                // Barra de valor
+                doc.rect(40, currentBarY, Math.max(barW, 2), barHeight).fill(barColor);
+                
+                // Texto do Site
+                const urlText = site.url.substring(0, 28);
+                const textWidth = doc.widthOfString(urlText);
+                
+                // LÓGICA DE CONTRASTE:
+                // Se a barra for maior que o texto + margem, escreve DENTRO em BRANCO
+                // Se não, escreve FORA em CINZA ESCURO
+                if (barW > textWidth + 10) {
+                    doc.fillColor('#FFFFFF').text(urlText, 45, currentBarY + 3);
+                } else {
+                    // Escreve logo após a barra
+                    doc.fillColor(colors.text).text(urlText, 45 + Math.max(barW, 2) + 5, currentBarY + 3);
                 }
-            } else {
-                 doc.fontSize(10).font('Helvetica').text('  Nenhuma atividade registrada ou dados inválidos.');
-            }
-            doc.moveDown(1.5);
+
+                // Tempo (Fixo à direita)
+                doc.fillColor(colors.muted).text(formatMinutes(site.total_duration), 40 + chartWidth + 10, currentBarY + 3);
+                
+                currentBarY += 23;
+            });
+
+            // --- TABELA ---
+            const tableX = 320;
+            const tableY = startY + 15;
+            doc.fontSize(8).font('Helvetica-Bold').fillColor(colors.text);
+            doc.text('Site', tableX, startY);
+            doc.text('Categoria', tableX + 110, startY);
+            doc.text('Tempo', tableX + 190, startY);
+
+            let rowY = tableY;
+            sortedSites.slice(0, 10).forEach((site, i) => {
+                const isImproper = IMPROPER_CATEGORIES.includes(site.category);
+                if (i % 2 === 0) doc.rect(tableX - 2, rowY - 2, 235, 12).fill('#FAFAFA');
+                
+                if (isImproper) doc.fillColor(colors.danger).font('Helvetica-Bold');
+                else doc.fillColor(colors.text).font('Helvetica');
+
+                doc.fontSize(8);
+                doc.text(site.url.substring(0, 20), tableX, rowY);
+                doc.text((site.category||'Geral').substring(0, 12), tableX + 110, rowY);
+                doc.text(formatMinutes(site.total_duration), tableX + 190, rowY);
+                rowY += 12;
+            });
+
+            const sectionHeight = Math.max((top5.length * 23) + 20, (sortedSites.slice(0,10).length * 12) + 20);
+            doc.y = startY + sectionHeight + 10;
+            doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#E5E7EB').stroke();
+            doc.moveDown(1);
+        }
+
+        const range = doc.bufferedPageRange();
+        for (let i = range.start; i < range.start + range.count; i++) {
+            doc.switchToPage(i);
+            doc.fontSize(8).fillColor(colors.muted).text(`Página ${i + 1} de ${range.count}`, 0, doc.page.height - 30, { align: 'center' });
         }
         doc.end();
 
     } catch (error) {
-        console.error('ERRO CRÍTICO ao gerar relatório em PDF:', error);
-        res.status(500).send('Erro interno ao gerar o relatório.');
+        console.error('ERRO PDF:', error);
+        if (!res.headersSent) res.status(500).send('Erro ao gerar relatório.');
     }
 });
 

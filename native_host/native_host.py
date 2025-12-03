@@ -17,7 +17,7 @@ def send_message(message):
 try:
     # Pega o nome de usuário do Sistema Operacional
     # os.getlogin() é uma forma robusta de fazer isso
-    username = 'prof'
+    username = os.getlogin()
     # Envia a mensagem de sucesso de volta para a extensão
     send_message({'status': 'success', 'username': username})
 except Exception as e:

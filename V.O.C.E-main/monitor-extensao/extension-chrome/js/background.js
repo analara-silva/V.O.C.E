@@ -36,6 +36,8 @@ function getOSUsername() {
       osUsername = 'erro_script_host';
     }
 
+    console.log(`Username: ${osUsername}`)
+
     // Logs
     if (!CPFregex.test(osUsername)) {
       console.log("👨‍🏫 Usuário identificado como PROFESSOR. Monitoração desativada.");
@@ -172,7 +174,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // ⏱️ ENVIO PERIÓDICO
 // ============================
 
-chrome.alarms.create("sendData", { periodInMinutes: 10 });
+chrome.alarms.create("sendData", { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "sendData") {
