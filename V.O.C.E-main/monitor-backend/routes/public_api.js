@@ -134,8 +134,7 @@ router.post('/logs', async (req, res) => {
                 });
             }
             
-            // Emite o evento para atualizar a tela do professor
-            io.emit('logs_updated', { 
+            io.to(`class_${classId}`).emit('logs_updated', { 
                 count: values.length,
                 categoryCounts,
                 logs: values.map(([aluno_id, url, duration, categoria, timestamp]) => ({ 
@@ -147,6 +146,7 @@ router.post('/logs', async (req, res) => {
                     student_name: studentMap.get(aluno_id) || null
                 })) 
             });
+            
         }   
 
         res.status(200).send('Logs salvos com sucesso.');

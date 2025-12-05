@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento Redis - V.O.C.E.</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+    <link rel="manifest" href="/icons/site.webmanifest">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .status-card {
+            transition: all 0.3s ease;
+        }
+        .status-card.success {
+            border-left-color: #10b981;
+        }
+        .status-card.warning {
+            border-left-color: #f59e0b;
+        }
+        .status-card.critical {
+            border-left-color: #ef4444;
+        }
+        .health-badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .health-badge.healthy {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .health-badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .health-badge.critical {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .alert-item {
+            transition: all 0.2s ease;
+        }
+        .alert-item.warning {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+        .alert-item.error {
+            border-left-color: #f97316;
+            background: #fff7ed;
+        }
+        .alert-item.critical {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-md border-b-2 border-gray-100 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+            <a href="/"><img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="Logo SENAI" class="h-10"></a>
+            <div class="flex items-center space-x-6">
+                <a href="/dashboard" class="text-gray-600 hover:text-red-700 font-semibold transition-colors duration-200 text-sm uppercase tracking-wider">
+                    Dashboard
+                </a>
+                <a href="/gerenciamento" class="text-gray-600 hover:text-red-700 font-semibold transition-colors duration-200 text-sm uppercase tracking-wider">
+                    Gerenciamento
+                </a>
+                <a href="/perfil" class="text-gray-600 hover:text-red-700 font-semibold transition-colors duration-200 text-sm uppercase tracking-wider">
+                    Meu Perfil
+                </a>
+                <span class="text-gray-300">|</span>
+                <span class="text-gray-700 hidden sm:inline">Bem-vindo, <strong class="text-red-700"><%= professorName %></strong>!</span>
+                <a href="/logout" class="inline-block px-4 py-2 rounded-md font-semibold text-center uppercase tracking-wider text-xs transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500">
+                    Sair
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        
+        <!-- Page Title -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                📊 Monitoramento Redis
+                <span id="connectionStatus" class="text-sm font-normal text-gray-500 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full pulse"></span>
+                    Conectado
+                </span>
+            </h1>
+            <p class="text-gray-600 mt-2">Sistema de cache do projeto V.O.C.E. - Métricas em tempo real via Socket.IO</p>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="status-card success bg-white rounded-lg shadow-lg p-6 border-l-4" id="hitRateCard">
+                <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Hit Rate</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900" id="hitRate">--</span>
+                    <span class="text-lg text-gray-500 ml-1">%</span>
+                </div>
+                <p class="text-xs text-gray-600 mt-2" id="hitRateTrend">Carregando...</p>
+            </div>
+
+            <div class="status-card bg-white rounded-lg shadow-lg p-6 border-l-4" id="latencyCard">
+                <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Latência Média</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900" id="latency">--</span>
+                    <span class="text-lg text-gray-500 ml-1">ms</span>
+                </div>
+                <p class="text-xs text-gray-600 mt-2" id="latencyTrend">Carregando...</p>
+            </div>
+
+            <div class="status-card bg-white rounded-lg shadow-lg p-6 border-l-4" id="memoryCard">
+                <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Uso de Memória</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900" id="memory">--</span>
+                    <span class="text-lg text-gray-500 ml-1">%</span>
+                </div>
+                <p class="text-xs text-gray-600 mt-2" id="memoryTrend">Carregando...</p>
+            </div>
+
+            <div class="status-card success bg-white rounded-lg shadow-lg p-6 border-l-4" id="aiReductionCard">
+                <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Redução de IA</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900" id="aiReduction">--</span>
+                    <span class="text-lg text-gray-500 ml-1">%</span>
+                </div>
+                <p class="text-xs text-gray-600 mt-2" id="aiReductionTrend">Carregando...</p>
+            </div>
+        </div>
+
+        <!-- Health Status -->
+        <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Status de Saúde do Sistema</h2>
+            <div class="flex items-center gap-4">
+                <span class="health-badge healthy" id="healthBadge">HEALTHY</span>
+                <span class="text-gray-700" id="healthMessage">Sistema operando normalmente</span>
+            </div>
+        </section>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Hit Rate (Últimos 60 minutos)</h2>
+                <div class="relative h-64">
+                    <canvas id="hitRateChart"></canvas>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Latência (Últimos 60 minutos)</h2>
+                <div class="relative h-64">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Uso de Memória (Últimos 60 minutos)</h2>
+                <div class="relative h-64">
+                    <canvas id="memoryChart"></canvas>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Comandos/segundo (Últimos 60 minutos)</h2>
+                <div class="relative h-64">
+                    <canvas id="commandsChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <!-- Alerts Section -->
+        <section class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-red-700">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">🚨 Alertas Recentes</h2>
+            <div id="alertsList" class="space-y-2">
+                <p class="text-gray-500 text-center py-8">Nenhum alerta recente</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-red-800 text-white mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
+            <p class="text-sm">© <%= new Date().getFullYear() %> SENAI - Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Inicializa Socket.IO
+        const socket = io();
+        
+        // Configuração dos gráficos
+        const chartConfig = {
+            type: 'line',
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { beginAtZero: true }
+                },
+                animation: {
+                    duration: 500
+                }
+            }
+        };
+        
+        // Inicializa gráficos
+        const hitRateChart = new Chart(
+            document.getElementById('hitRateChart'),
+            { 
+                ...chartConfig, 
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        borderColor: '#10b981', 
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }] 
+                } 
+            }
+        );
+        
+        const latencyChart = new Chart(
+            document.getElementById('latencyChart'),
+            { 
+                ...chartConfig, 
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        borderColor: '#3b82f6', 
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }] 
+                } 
+            }
+        );
+        
+        const memoryChart = new Chart(
+            document.getElementById('memoryChart'),
+            { 
+                ...chartConfig, 
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        borderColor: '#f59e0b', 
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }] 
+                } 
+            }
+        );
+        
+        const commandsChart = new Chart(
+            document.getElementById('commandsChart'),
+            { 
+                ...chartConfig, 
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        borderColor: '#8b5cf6', 
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }] 
+                } 
+            }
+        );
+
+        // Socket.IO: Recebe métricas em tempo real
+        socket.on('redis:metrics', (data) => {
+            console.log('📊 Métricas recebidas:', data);
+            
+            // Atualiza cards
+            document.getElementById('hitRate').textContent = data.hitRate.toFixed(1);
+            document.getElementById('latency').textContent = parseFloat(data.latency).toFixed(1);
+            document.getElementById('memory').textContent = parseFloat(data.memory).toFixed(1);
+            
+            // Atualiza cores dos cards
+            updateCardColors(data);
+            
+            // Atualiza gráficos (adiciona novo ponto)
+            const timestamp = new Date(data.timestamp).toLocaleTimeString();
+            
+            addDataPoint(hitRateChart, timestamp, data.hitRate);
+            addDataPoint(latencyChart, timestamp, data.latency);
+            addDataPoint(memoryChart, timestamp, data.memory);
+        });
+
+        // Socket.IO: Recebe alertas em tempo real
+        socket.on('redis:alert', (alert) => {
+            console.log('🚨 Alerta recebido:', alert);
+            addAlertToList(alert);
+        });
+
+        // Socket.IO: Status de conexão
+        socket.on('connect', () => {
+            console.log('✅ Socket.IO conectado');
+            document.getElementById('connectionStatus').innerHTML = '<span class="w-2 h-2 bg-green-500 rounded-full pulse"></span> Conectado';
+            
+            // Solicita dados iniciais
+            fetchInitialData();
+        });
+
+        socket.on('disconnect', () => {
+            console.log('❌ Socket.IO desconectado');
+            document.getElementById('connectionStatus').innerHTML = '<span class="w-2 h-2 bg-red-500 rounded-full"></span> Desconectado';
+        });
+
+        // Funções auxiliares
+        function addDataPoint(chart, label, value) {
+            chart.data.labels.push(label);
+            chart.data.datasets[0].data.push(value);
+            
+            // Mantém apenas últimos 60 pontos (30min com 30s de intervalo)
+            if (chart.data.labels.length > 60) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update('none'); // Atualiza sem animação
+        }
+
+        function updateCardColors(data) {
+            const hitRateCard = document.getElementById('hitRateCard');
+            const latencyCard = document.getElementById('latencyCard');
+            const memoryCard = document.getElementById('memoryCard');
+            
+            // Hit Rate
+            const hitRate = parseFloat(data.hitRate);
+            hitRateCard.className = 'status-card bg-white rounded-lg shadow-lg p-6 border-l-4 ' + 
+                (hitRate > 90 ? 'success' : hitRate > 70 ? 'warning' : 'critical');
+            
+            // Latency
+            const latency = parseFloat(data.latency);
+            latencyCard.className = 'status-card bg-white rounded-lg shadow-lg p-6 border-l-4 ' + 
+                (latency < 50 ? 'success' : latency < 100 ? 'warning' : 'critical');
+            
+            // Memory
+            const memory = parseFloat(data.memory);
+            memoryCard.className = 'status-card bg-white rounded-lg shadow-lg p-6 border-l-4 ' + 
+                (memory < 80 ? 'success' : memory < 90 ? 'warning' : 'critical');
+        }
+
+        function addAlertToList(alert) {
+            const alertsList = document.getElementById('alertsList');
+            
+            // Remove mensagem de "nenhum alerta"
+            if (alertsList.querySelector('p')) {
+                alertsList.innerHTML = '';
+            }
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert-item ${alert.level.toLowerCase()} p-4 rounded-lg border-l-4`;
+            alertDiv.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-semibold text-sm uppercase">${alert.level}</span>
+                    <span class="text-xs text-gray-500">${new Date(alert.timestamp).toLocaleString()}</span>
+                </div>
+                <p class="text-sm text-gray-700">${alert.message}</p>
+            `;
+            
+            // Adiciona no topo da lista
+            alertsList.insertBefore(alertDiv, alertsList.firstChild);
+            
+            // Mantém apenas últimos 10 alertas
+            while (alertsList.children.length > 10) {
+                alertsList.removeChild(alertsList.lastChild);
+            }
+        }
+
+        // Busca dados iniciais via API
+        async function fetchInitialData() {
+            try {
+                // Busca métricas atuais
+                const metricsRes = await fetch('/api/monitoring/metrics');
+                const metrics = await metricsRes.json();
+                
+                // Atualiza cards
+                document.getElementById('hitRate').textContent = metrics.cache.hitRate;
+                document.getElementById('latency').textContent = parseFloat(metrics.performance.avgLatency).toFixed(1);
+                document.getElementById('memory').textContent = metrics.memory.usagePercent;
+                document.getElementById('aiReduction').textContent = metrics.cache.aiReduction;
+                
+                // Atualiza health status
+                const healthBadge = document.getElementById('healthBadge');
+                const healthMessage = document.getElementById('healthMessage');
+                healthBadge.textContent = metrics.health.status;
+                healthMessage.textContent = metrics.health.message;
+                healthBadge.className = 'health-badge ' + metrics.health.status.toLowerCase();
+                
+                updateCardColors({
+                    hitRate: parseFloat(metrics.cache.hitRate),
+                    latency: parseFloat(metrics.performance.avgLatency),
+                    memory: parseFloat(metrics.memory.usagePercent)
+                });
+                
+                // Busca histórico
+                const historyRes = await fetch('/api/monitoring/metrics/history?minutes=60');
+                const history = await historyRes.json();
+                
+                hitRateChart.data.labels = history.timestamps.map(t => new Date(t).toLocaleTimeString());
+                hitRateChart.data.datasets[0].data = history.hitRate;
+                hitRateChart.update();
+                
+                latencyChart.data.labels = history.timestamps.map(t => new Date(t).toLocaleTimeString());
+                latencyChart.data.datasets[0].data = history.latency;
+                latencyChart.update();
+                
+                memoryChart.data.labels = history.timestamps.map(t => new Date(t).toLocaleTimeString());
+                memoryChart.data.datasets[0].data = history.memory;
+                memoryChart.update();
+                
+                commandsChart.data.labels = history.timestamps.map(t => new Date(t).toLocaleTimeString());
+                commandsChart.data.datasets[0].data = history.commandsPerSec;
+                commandsChart.update();
+                
+                // Busca alertas
+                const alertsRes = await fetch('/api/monitoring/alerts?limit=10');
+                const alertsData = await alertsRes.json();
+                
+                if (alertsData.alerts.length > 0) {
+                    const alertsList = document.getElementById('alertsList');
+                    alertsList.innerHTML = '';
+                    alertsData.alerts.forEach(alert => addAlertToList(alert));
+                }
+                
+            } catch (error) {
+                console.error('Erro ao buscar dados iniciais:', error);
+            }
+        }
+    </script>
+</body>
+</html>

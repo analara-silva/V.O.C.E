@@ -8,8 +8,8 @@ const dbConfig = {
     database: process.env.DB_DATABASE,
     port: process.env.DB_PORT,
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    connectionLimit: 50,
+    queueLimit: 100
 };
 const pool = mysql.createPool(dbConfig);
 console.log('✅ Pool de conexões MySQL configurado para o banco "v_o_c_e".');
