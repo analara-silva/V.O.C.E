@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <%- include('partials/header') %>
+        <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+        <link rel="manifest" href="icons/site.webmanifest">
+        </head>
+<body class="bg-white flex flex-col min-h-screen">
+    <style>
+        /* ============================================
+           ANIMAÇÕES DE ENTRADA DO TÍTULO
+           ============================================ */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-title {
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-subtitle {
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .hero-button {
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        /* ============================================
+           CANVAS DE PARTÍCULAS
+           ============================================ */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ============================================
+           DEGRADÊ DE FUNDO ANIMADO
+           ============================================ */
+        .hero-section {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f0f0f0 100%);
+            animation: gradientShift 8s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f0f0f0 100%);
+            }
+            50% {
+                background: linear-gradient(135deg, #f0f0f0 0%, #e9ecef 50%, #f8f9fa 100%);
+            }
+        }
+
+        /* ============================================
+           CONTEÚDO SOBRE AS PARTÍCULAS
+           ============================================ */
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* ============================================
+           EFEITO DE HOVER NOS BOTÕES
+           ============================================ */
+        @keyframes buttonGlow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+            }
+        }
+
+        .hero-button:hover {
+            /* Mantém o brilho e remove a subida */
+            animation: buttonGlow 0.6s ease-out;
+            /* transform: translateY(-2px); */
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
+        }
+
+        /* Efeito de partículas/brilho sutil ao retirar o mouse */
+        .hero-button {
+            transition: box-shadow 0.5s ease-out, transform 0.2s ease-out;
+        }
+
+        .hero-button:not(:hover) {
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.1); /* Brilho sutil persistente */
+        }
+
+        .hero-button:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(220, 38, 38, 0.2);
+        }
+    </style>
+
+    <!-- Cabeçalho Padrão SENAI -->
+    <header class="bg-white shadow-md border-b-2 border-gray-100 relative z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+            <a href="/"><img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="Logo SENAI" class="h-10"></a>
+            
+            <!-- [ALTERADO] Lógica condicional para os botões -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <% if (isLoggedIn) { %>
+                    <a href="/dashboard" class="hidden sm:inline-block px-4 sm:px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-xs sm:text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500">
+                        Acessar Painel
+                    </a>
+                    <a href="/logout" class="text-xs sm:text-sm text-gray-600 hover:text-red-700 font-semibold transition-colors duration-200 uppercase tracking-wider">
+                        Sair
+                    </a>
+                <% } else { %>
+                    <a href="/login" class="text-xs sm:text-sm text-gray-600 hover:text-red-700 font-semibold transition-colors duration-200 uppercase tracking-wider">
+                        Entrar
+                    </a>
+                    <a href="/cadastro" class="inline-block px-4 sm:px-6 py-2.5 rounded-md font-semibold text-center uppercase tracking-wider text-xs sm:text-sm transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500">
+                        Cadastrar
+                    </a>
+                <% } %>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL - COM PARTÍCULAS -->
+    <main class="flex-grow flex items-center justify-center hero-section">
+        <!-- Canvas para as partículas -->
+        <canvas id="particleCanvas"></canvas>
+
+        <!-- Conteúdo sobre as partículas -->
+        <div class="hero-content w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center">
+                    <h1 class="hero-title text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
+                        Monitorização Inteligente para
+                        <span class="block text-red-700 mt-2 sm:mt-3">
+                            Ambientes Educacionais
+                        </span>
+                    </h1>
+                    <p class="hero-subtitle mt-4 sm:mt-6 text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2">
+                        Gerencie laboratórios de informática e salas de aula com ferramentas avançadas de monitorização e análise comportamental.
+                    </p>
+                    <div class="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+                        <a href="/login" class="hero-button inline-block w-full sm:w-auto px-6 sm:px-8 py-3 text-sm sm:text-base rounded-md font-semibold text-center uppercase tracking-wider transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-700 text-white hover:bg-red-800 focus:ring-red-500">
+                            Acessar Painel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer class="bg-red-800 text-white mt-auto relative z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-center">
+            <p class="text-xs sm:text-sm">&copy; <%= new Date().getFullYear() %> SENAI - Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================
+        // SISTEMA DE PARTÍCULAS INTERATIVAS
+        // ============================================
+        class ParticleSystem {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.mouseX = 0;
+                this.mouseY = 0;
+                this.isMouseNear = false;
+                this.repelRadius = 100;
+
+                // Configurar canvas
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+
+                // Eventos de mouse
+                document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                document.addEventListener('mouseleave', () => this.isMouseNear = false);
+
+                // Criar partículas iniciais
+                this.createParticles();
+
+                // Iniciar animação
+                this.animate();
+            }
+
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            createParticles() {
+                const particleCount = Math.min(80, Math.floor(window.innerWidth / 15));
+                
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        radius: Math.random() * 2 + 1,
+                        opacity: Math.random() * 0.5 + 0.3,
+                        originalOpacity: Math.random() * 0.5 + 0.3,
+                        color: this.getRandomColor()
+                    });
+                }
+            }
+
+            getRandomColor() {
+                const colors = [
+                    'rgba(220, 38, 38, ',    // Vermelho (cor SENAI)
+                    'rgba(59, 130, 246, ',   // Azul
+                    'rgba(107, 114, 128, ',  // Cinza
+                    'rgba(99, 102, 241, '    // Índigo
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            handleMouseMove(e) {
+                this.mouseX = e.clientX;
+                this.mouseY = e.clientY;
+                this.isMouseNear = true;
+            }
+
+            update() {
+                this.particles.forEach(particle => {
+                    // Movimento base
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+
+                    // Bounce nas bordas
+                    if (particle.x - particle.radius < 0 || particle.x + particle.radius > this.canvas.width) {
+                        particle.vx *= -1;
+                        particle.x = Math.max(particle.radius, Math.min(this.canvas.width - particle.radius, particle.x));
+                    }
+                    if (particle.y - particle.radius < 0 || particle.y + particle.radius > this.canvas.height) {
+                        particle.vy *= -1;
+                        particle.y = Math.max(particle.radius, Math.min(this.canvas.height - particle.radius, particle.y));
+                    }
+
+                    // Efeito de repulsão do mouse
+                    if (this.isMouseNear) {
+                        const dx = particle.x - this.mouseX;
+                        const dy = particle.y - this.mouseY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < this.repelRadius) {
+                            const force = (this.repelRadius - distance) / this.repelRadius;
+                            const angle = Math.atan2(dy, dx);
+                            particle.vx += Math.cos(angle) * force * 2;
+                            particle.vy += Math.sin(angle) * force * 2;
+
+                            // Fade out quando perto do mouse
+                            particle.opacity = particle.originalOpacity * (1 - force);
+                        } else {
+                            // Volta à opacidade original gradualmente
+                            particle.opacity += (particle.originalOpacity - particle.opacity) * 0.05;
+                        }
+                    } else {
+                        // Volta à opacidade original quando mouse sai
+                        particle.opacity += (particle.originalOpacity - particle.opacity) * 0.05;
+                    }
+
+                    // Limitar velocidade máxima
+                    const maxSpeed = 2;
+                    const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                    if (speed > maxSpeed) {
+                        particle.vx = (particle.vx / speed) * maxSpeed;
+                        particle.vy = (particle.vy / speed) * maxSpeed;
+                    }
+                });
+            }
+
+            draw() {
+                // Limpar canvas com fade suave
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Desenhar partículas
+                this.particles.forEach(particle => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = particle.color + particle.opacity + ')';
+                    this.ctx.fill();
+
+                    // Desenhar conexões entre partículas próximas
+                    this.particles.forEach(otherParticle => {
+                        const dx = particle.x - otherParticle.x;
+                        const dy = particle.y - otherParticle.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < 100) {
+                            this.ctx.strokeStyle = `rgba(220, 38, 38, ${(1 - distance / 100) * 0.2 * particle.opacity})`;
+                            this.ctx.lineWidth = 0.5;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(particle.x, particle.y);
+                            this.ctx.lineTo(otherParticle.x, otherParticle.y);
+                            this.ctx.stroke();
+                        }
+                    });
+                });
+            }
+
+            animate() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // ============================================
+        // INICIALIZAR TUDO
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Iniciar sistema de partículas
+            new ParticleSystem('particleCanvas');
+
+            // Scroll reveal (se houver elementos com essa classe)
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -100px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.scroll-reveal').forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
