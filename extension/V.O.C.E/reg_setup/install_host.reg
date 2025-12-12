@@ -1,0 +1,6 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Google\Chrome\NativeMessagingHosts\com.voce.monitor]
+@="C:\\Program Files\\V.O.C.E\\host_manifest\\host_manifest.json"
+
+

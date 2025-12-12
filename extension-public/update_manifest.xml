@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="ijcnbijepmnkkeihkikjofmohhadjcnd">
-    <updatecheck codebase="http://192.168.0.10/ext/suaextensao.crx" version="1.0" />
+    <updatecheck codebase="https://10.111.9.8/ext/extension.crx" version="1.0" />
   </app>
 </gupdate>

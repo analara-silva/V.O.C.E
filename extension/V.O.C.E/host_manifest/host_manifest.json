@@ -1,0 +1,9 @@
+{
+  "name": "com.voce.monitor",
+  "description": "Host nativo V.O.C.E",
+  "path": "C:\\Program Files\\V.O.C.E\\native_host\\run_host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://ijcnbijepmnkkeihkikjofmohhadjcnd/"
+  ]
+}
