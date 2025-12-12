@@ -1,4 +1,4 @@
 Windows Registry Editor Version 5.00
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Google\Chrome\ExtensionInstallForce]
-"1"="ijcnbijepmnkkeihkikjofmohhadjcnd;https://10.111.9.8/update_manifest.xml"
+"1"="ijcnbijepmnkkeihkikjofmohhadjcnd;https://10.111.9.8:8080/update_manifest.xml"
