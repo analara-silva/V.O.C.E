@@ -13,6 +13,37 @@ O **V.O.C.E (Visualização e Observação do Comportamento Estudantil)** é um 
 A plataforma realiza a coleta de dados de navegação, a classificação automática dos acessos por categoria e a visualização dessas informações por meio de um **dashboard interativo**, auxiliando na análise pedagógica e na tomada de decisões educacionais.
 
 ---
+## 📸 Demonstração Visual do Sistema
+
+A seguir, são apresentadas algumas telas do **dashboard do professor**, destacando as principais funcionalidades do sistema V.O.C.E.
+
+### 📊 Relatórios e Monitoramento de Atividades
+Visualização dos dados de navegação dos alunos, com filtros por turma, categoria e período, além da exportação de relatórios.
+
+![Relatórios e Monitoramento](imagens/dashboard.png)
+
+---
+
+### 👥 Gestão de Turmas e Alunos
+Interface destinada à administração de turmas, permitindo adicionar, editar ou remover alunos de forma prática.
+
+![Gestão de Turmas](imagens/gerencimento%20de%20salas.png)
+
+---
+
+### 📈 Análise Visual dos Dados
+Gráficos interativos que apresentam os sites mais acessados, auxiliando na análise do comportamento de navegação.
+
+![Análise Visual](imagens/graficos.png)
+
+---
+
+### 👤 Perfil do Usuário
+Tela de gerenciamento do perfil do professor, incluindo atualização de dados pessoais e alteração de senha.
+
+![Perfil do Usuário](imagens/perfil.png)
+
+---
 
 ## 🎓 Contexto Acadêmico
 
@@ -58,6 +89,19 @@ O sistema é composto por três componentes principais:
 
 ---
 
+### 🎥 Demonstração em Vídeo
+
+Para facilitar a compreensão prática do funcionamento do sistema, foi disponibilizado um vídeo demonstrativo apresentando o **dashboard do professor**, incluindo a visualização dos dados de navegação, categorização dos acessos e atualização em tempo real.
+
+📌 **Vídeo de demonstração (Canva):**  
+👉 https://www.canva.com/design/DAG4nJSdVzM/OmZGjSj9r-_h916IGkD6Fw/watch?authuser=0
+
+> ℹ️ *O vídeo está hospedado no Canva e pode solicitar login para visualização, dependendo da configuração de acesso do usuário.*
+
+O vídeo apresenta o fluxo completo da aplicação, desde o acesso ao dashboard até a análise das informações coletadas, proporcionando uma visão clara da solução desenvolvida.
+
+---
+
 ## 🚀 Arquitetura e Destaques Técnicos
 
 O V.O.C.E foi desenvolvido com uma arquitetura **Full Stack**, integrando diferentes tecnologias para garantir desempenho, segurança e escalabilidade.
@@ -99,19 +143,6 @@ O desenvolvimento do V.O.C.E seguiu boas práticas de segurança da informação
 - **Criptografia de Senhas:** Armazenamento seguro utilizando **bcrypt**.  
 - **SQL Parametrizado:** Prevenção contra ataques de **SQL Injection**.  
 - **Isolamento de Dados:** Garantia de que cada professor tenha acesso apenas às informações de suas turmas.
-
----
-
-### 🎥 Demonstração em Vídeo
-
-Para facilitar a compreensão prática do funcionamento do sistema, foi disponibilizado um vídeo demonstrativo apresentando o **dashboard do professor**, incluindo a visualização dos dados de navegação, categorização dos acessos e atualização em tempo real.
-
-📌 **Vídeo de demonstração (Canva):**  
-👉 https://www.canva.com/design/DAG4nJSdVzM/OmZGjSj9r-_h916IGkD6Fw/watch?authuser=0
-
-> ℹ️ *O vídeo está hospedado no Canva e pode solicitar login para visualização, dependendo da configuração de acesso do usuário.*
-
-O vídeo apresenta o fluxo completo da aplicação, desde o acesso ao dashboard até a análise das informações coletadas, proporcionando uma visão clara da solução desenvolvida.
 
 ---
 
