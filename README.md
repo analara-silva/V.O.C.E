@@ -1,4 +1,4 @@
-# V.O.C.E - Visualização e Observação do Comportamento Estudantil
+# V.O.C.E – Visualização e Observação do Comportamento Estudantil
 
 ![Versão](https://img.shields.io/badge/version-1.1-blue)
 ![Status](https://img.shields.io/badge/status-desenvolvimento-green)
@@ -6,109 +6,135 @@
 
 ---
 
-## 👥 Autores e Orientação
+## 📌 Visão Geral
 
-**Autores:** Ana Lara Fernandes, Gustavo Emanuel Alves, Sidney da Silva Paulino  
-**Orientadores:** Leonardo Gomes e Anderson Roberto  
-**Instituição:** SENAI-SP 
+O **V.O.C.E (Visualização e Observação do Comportamento Estudantil)** é um projeto de conclusão de curso desenvolvido no **SENAI-SP**, com o objetivo de apoiar professores no acompanhamento e análise do uso da internet por alunos em ambientes educacionais.
 
----
-
-O **V.O.C.E** é uma plataforma completa desenvolvida para o monitoramento e análise do comportamento de navegação de alunos em ambientes educacionais. O sistema permite que professores acompanhem o tempo de uso de sites, categorizem os acessos com **Inteligência Artificial** e visualizem os dados em um **Dashboard Interativo** para análise pedagógica.
-
-## 🚀 Destaques e Inovações Técnicas
-
-O projeto V.O.C.E. é construído sobre uma arquitetura **Full-Stack Híbrida** que combina o melhor de diferentes ecossistemas para garantir performance, inteligência e confiabilidade.
-
-### 1. Classificação Inteligente de URLs (Deep Learning)
-
-- **Tecnologia Central:** Utilizamos **TensorFlow** e **Keras** para implementar um modelo de **CNN (Convolutional Neural Network) Híbrida**.
-- **Inovação:** O modelo analisa a URL em dois níveis (por palavras e por caracteres) para uma categorização precisa em tempo real (e.g., "Educacional", "Rede Social", "Jogos").
-- **Recursos:** O sistema inclui um **Sistema de Fallback** robusto, garantindo que a categorização continue funcionando mesmo em caso de falha do modelo principal.
-
-### 2. Arquitetura de Comunicação Avançada
-
-- **Tempo Real:** O Dashboard do professor é atualizado instantaneamente via **Socket.IO** (WebSockets), permitindo que os educadores visualizem os logs de navegação no momento em que ocorrem.
-- **Integração Nativa:** A Extensão do Navegador se comunica com o Sistema Operacional através do protocolo **Native Messaging** (implementado em Python), garantindo a **identificação segura e confiável** do aluno.
-- **Otimização:** A Extensão utiliza **Batch Processing** para enviar logs em lotes, otimizando o uso da rede e reduzindo a carga no servidor.
-
-### 3. Stack Tecnológica
-
-| Camada | Tecnologias Principais |
-|---|---|
-| **Backend** | **Node.js**, **Express.js**, **Socket.IO** |
-| **Inteligência Artificial** | **Python**, **TensorFlow**, **Keras**, **scikit-learn** |
-| **Banco de Dados** | **MySQL/MariaDB** |
-| **Frontend** | **Tailwind CSS**, **EJS** (Server-Side Rendering) |
-| **Extensão** | **Manifest V3**, **Native Messaging** |
+A plataforma realiza a coleta de dados de navegação, a classificação automática dos acessos por categoria e a visualização dessas informações por meio de um **dashboard interativo**, auxiliando na análise pedagógica e na tomada de decisões educacionais.
 
 ---
 
-## 🔒 Conformidade e Proteção de Dados
+## 🎓 Contexto Acadêmico
 
-O projeto V.O.C.E. foi desenvolvido com foco rigoroso na segurança e na privacidade dos dados, em conformidade com as melhores práticas de proteção de dados (como a LGPD no Brasil).
+- **Tipo de Projeto:** Trabalho de Conclusão de Curso (TCC)  
+- **Instituição:** SENAI-SP  
+- **Curso:** Técnico em Desenvolvimento de Sistemas  
 
-### 1. Segurança na Identificação
+### 👥 Autores
+- Ana Lara Fernandes da Silva  
+- Gustavo Emanuel Alves  
+- Sidney da Silva Paulino  
 
-- **Anonimização:** O sistema rastreia o **ID de identificação** do aluno (obtido via Native Host) e não o nome completo, a menos que o professor o vincule no Dashboard.
-- **Hash de Senhas:** Todas as senhas de professores são armazenadas usando **bcrypt**, um algoritmo de hash criptográfico robusto e lento, que impede a recuperação de senhas em caso de vazamento de dados.
-
-### 2. Integridade e Prevenção de Ataques
-
-- **SQL Parametrizado:** Todas as interações com o banco de dados utilizam **SQL Parametrizado** (Prepared Statements), prevenindo ataques de **SQL Injection**.
-- **Isolamento de Dados:** A lógica de aplicação garante que cada professor acesse apenas os dados de suas turmas, mantendo o isolamento de dados (`Multi-tenant`).
-
-### 3. Uso de Recursos de Terceiros
-
-O módulo de IA utiliza recursos de processamento de linguagem natural. Um dos recursos de apoio para o treinamento do modelo é o arquivo `globe6b100.txt`, que contém vetores de palavras pré-treinados.
-
-- **Referência:** O arquivo `globe6b100.txt` é um recurso público e amplamente utilizado na comunidade de Machine Learning para a criação de embeddings de palavras. **[Clique aqui para baixar.](https://nlp.stanford.edu/projects/glove/)**
+### 👨‍🏫 Orientadores
+- Leonardo Gomes  
+- Anderson Roberto  
 
 ---
 
-## 🛠️ Instalação e Configuração
+## 👩‍💻 Contribuição Individual
+
+Neste projeto, minha atuação concentrou-se principalmente em:
+
+- Desenvolvimento do **backend** utilizando Node.js e Express.js  
+- Implementação da **lógica de negócio** e das rotas da aplicação  
+- Integração do sistema com o **banco de dados MySQL/MariaDB**  
+- Apoio na comunicação em tempo real entre backend e dashboard  
+- Participação no planejamento e estruturação geral da solução  
+
+---
+
+## 🧩 Descrição Funcional do Sistema
+
+O sistema é composto por três componentes principais:
+
+1. **Extensão de Navegador**  
+   Responsável pela coleta dos dados de navegação dos alunos.
+
+2. **Servidor Backend**  
+   Centraliza o processamento das informações, comunicação em tempo real e persistência dos dados.
+
+3. **Dashboard Web**  
+   Interface utilizada pelos professores para visualização de relatórios, logs e métricas de navegação.
+
+---
+
+## 🚀 Arquitetura e Destaques Técnicos
+
+O V.O.C.E foi desenvolvido com uma arquitetura **Full Stack**, integrando diferentes tecnologias para garantir desempenho, segurança e escalabilidade.
+
+### 1. Classificação Inteligente de URLs
+
+- Implementação de um modelo de **Deep Learning** utilizando **TensorFlow** e **Keras**.  
+- Utilização de uma **CNN híbrida**, analisando URLs em nível de caracteres e palavras.  
+- Classificação automática dos acessos em categorias como educacional, redes sociais e entretenimento.  
+- Implementação de um **mecanismo de fallback**, garantindo funcionamento mesmo em cenários de falha do modelo principal.
+
+### 2. Comunicação e Processamento em Tempo Real
+
+- Atualização instantânea do dashboard por meio de **Socket.IO (WebSockets)**.  
+- Comunicação segura entre a extensão do navegador e o sistema operacional via **Native Messaging**, implementado em Python.  
+- Utilização de **processamento em lote (batch processing)** para otimização do tráfego de dados.
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+| Camada | Tecnologias |
+|------|------------|
+| **Backend** | Node.js, Express.js, Socket.IO |
+| **Inteligência Artificial** | Python, TensorFlow, Keras, scikit-learn |
+| **Banco de Dados** | MySQL / MariaDB |
+| **Frontend** | EJS (SSR), Tailwind CSS |
+| **Extensão de Navegador** | Manifest V3, Native Messaging |
+
+---
+
+## 🔒 Segurança e Proteção de Dados
+
+O desenvolvimento do V.O.C.E seguiu boas práticas de segurança da informação e princípios alinhados à **Lei Geral de Proteção de Dados (LGPD)**.
+
+### Medidas adotadas
+
+- **Anonimização:** Utilização de identificadores técnicos no lugar de dados pessoais sensíveis.  
+- **Criptografia de Senhas:** Armazenamento seguro utilizando **bcrypt**.  
+- **SQL Parametrizado:** Prevenção contra ataques de **SQL Injection**.  
+- **Isolamento de Dados:** Garantia de que cada professor tenha acesso apenas às informações de suas turmas.
+
+---
+
+### 🎥 Demonstração em Vídeo
+
+Para facilitar a compreensão prática do funcionamento do sistema, foi disponibilizado um vídeo demonstrativo apresentando o **dashboard do professor**, incluindo a visualização dos dados de navegação, categorização dos acessos e atualização em tempo real.
+
+📌 **Vídeo de demonstração (Canva):**  
+👉 https://www.canva.com/design/DAG4nJSdVzM/OmZGjSj9r-_h916IGkD6Fw/watch?authuser=0
+
+> ℹ️ *O vídeo está hospedado no Canva e pode solicitar login para visualização, dependendo da configuração de acesso do usuário.*
+
+O vídeo apresenta o fluxo completo da aplicação, desde o acesso ao dashboard até a análise das informações coletadas, proporcionando uma visão clara da solução desenvolvida.
+
+---
+
+## 📦 Recursos de Terceiros
+
+Para o treinamento do modelo de classificação de URLs, foi utilizado o conjunto de vetores pré-treinados:
+
+- **GloVe (glove6b100.txt)**  
+  Recurso público amplamente utilizado em aplicações de Processamento de Linguagem Natural.  
+  🔗 https://nlp.stanford.edu/projects/glove/
+
+---
+
+## 🛠️ Instalação e Execução
 
 ### Pré-requisitos
+- Node.js (v18 ou superior)  
+- Python (v3.8 ou superior)  
+- MySQL ou MariaDB  
+- npm e pip  
 
-- Node.js (versão 18+)
-- Python (versão 3.8+)
-- MySQL/MariaDB
-- npm e pip
-
-### 1. Configuração do Backend (Node.js)
-
+### Backend
 ```bash
 cd V.O.C.E-main/monitor-backend
-
-# Instalar dependências Node.js
 npm install
-
-# Instalar dependências Python (para o módulo de IA)
-pip3 install -r requirements.txt
-
-# Configurar o arquivo .env (copie o .env.example)
-# Preencha as credenciais do MySQL
-```
-
-### 2. Configuração do Banco de Dados
-
-1. Crie o banco de dados `v_o_c_e`.
-2. Importe o schema:
-   ```bash
-   mysql -u [seu_usuario] -p v_o_c_e < ../../database_voce.sql
-   ```
-
-### 3. Configuração do Native Host (Python)
-
-Siga as instruções nos diretórios `host_manifest` e `native_host` para instalar o host nativo no sistema operacional e permitir a comunicação com a Extensão.
-
-### 4. Execução
-
-```bash
-# Iniciar o servidor (com nodemon)
-npm start
-```
-
----
-
-
+pip install -r requirements.txt
